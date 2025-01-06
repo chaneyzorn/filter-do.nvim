@@ -1,0 +1,21 @@
+{
+  "runtime": {
+    "version": "LuaJIT"
+  },
+  "diagnostics": {
+    "globals": ["vim"],
+    "libraryFiles": false
+  },
+  "workspace": {
+    "checkThirdParty": false,
+    "ignoreDir": [".dependencies"],
+    "library": [
+      "$PWD/.dependencies/busted/library",
+      "$PWD/.dependencies/luassert/library",
+      "$PWD/.dependencies/luvit-meta/library",
+      "$VIMRUNTIME/lua",
+      "${3rd}/luv/library",
+      "${3rd}/busted/library"
+    ]
+  }
+}
