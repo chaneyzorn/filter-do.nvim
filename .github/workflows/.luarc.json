@@ -8,12 +8,12 @@
   },
   "workspace": {
     "checkThirdParty": false,
-    "ignoreDir": [".dependencies"],
+    "ignoreDir": [".dependencies", ".lua", ".luarocks"],
     "library": [
       "$PWD/.dependencies/busted/library",
       "$PWD/.dependencies/luassert/library",
       "$PWD/.dependencies/luvit-meta/library",
-      "$VIMRUNTIME/lua",
+      "$VIMRUNTIME",
       "${3rd}/luv/library",
       "${3rd}/busted/library"
     ]

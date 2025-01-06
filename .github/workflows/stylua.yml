@@ -15,5 +15,5 @@ jobs:
       - uses: JohnnyMorganz/stylua-action@v4
         with:
           version: latest
-          token: ${{ secrets.ACTION_CI_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           args: --color always --check lua plugin
