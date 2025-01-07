@@ -4,7 +4,7 @@
 
 <p align="center">
     <a href="https://github.com/chaneyzorn/xdo.nvim/actions/workflows/llscheck.yml">
-        <img alt="linter" src="https://img.shields.io/github/actions/workflow/status/chaneyzorn/xdo.nvim/llscheck.yml?branch=main&label=linter">
+        <img alt="linter" src="https://img.shields.io/github/actions/workflow/status/chaneyzorn/xdo.nvim/llscheck.yml?branch=main&label=Linter">
     </a>
     <a href="https://github.com/chaneyzorn/xdo.nvim/actions/workflows/stylua.yml">
         <img alt="stylua" src="https://img.shields.io/github/actions/workflow/status/chaneyzorn/xdo.nvim/stylua.yml?branch=main&label=Stylua">
