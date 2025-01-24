@@ -1,4 +1,4 @@
----@module 'xdo.lib.config'
+---@module 'xdo.config'
 ---
 vim.g.loaded_xdo = false
 
