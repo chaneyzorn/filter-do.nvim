@@ -1,9 +1,33 @@
+---@meta
+
 --- A collection of types to be included / used in other Lua files.
----
---- These types are either required by the Lua API or required for the normal
---- operation of this Lua plugin.
----
 ---@module 'xdo.types'
 
----@class xdo.Configuration
----    The user's customizations for this plugin.
+---@alias xdo.XdoCmdName
+---| '"Xdo"'
+---| '"Xdov"'
+---| '"Vdo"'
+---| '"Vdov"'
+
+---@alias xdo.EnvKv {[string]:string}
+
+---@class Xdo.BufRange
+---@field bufnr integer
+---@field start_row integer
+---@field end_row integer
+---@field start_col integer
+---@field end_col integer
+---@field tail_len integer
+
+---@class xdo.XdoCtx
+---@field buf_range Xdo.BufRange
+---@field provider string
+---@field code_snip string
+---@field v_block_wised boolean
+---@field v_char_wised boolean
+---@field edit_scratch boolean
+---@field env xdo.EnvKv
+
+---@class xdo.ProviderInfo
+---@field name string
+---@field filter_cmd fun(src_path:string):string[]
