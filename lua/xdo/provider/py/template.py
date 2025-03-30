@@ -1,5 +1,31 @@
+import logging
 import os
 import sys
+
+
+def setup_logger():
+    script_name = os.path.basename(__file__)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+
+    log_file_name = "xdo_stub.log"
+    log_file_path = os.path.join(script_dir, log_file_name)
+
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+
+    file_handler = logging.FileHandler(log_file_path)
+    file_handler.setLevel(logging.INFO)
+
+    formatter = logging.Formatter(
+        f"%(asctime)s - {script_name} - %(levelname)s - %(message)s"
+    )
+    file_handler.setFormatter(formatter)
+
+    logger.addHandler(file_handler)
+    return logger
+
+
+logger = setup_logger()
 
 
 class Env:
@@ -8,6 +34,8 @@ class Env:
 
 
 env = Env()
+v_block_wised = env.EX_CMD in ["Vdo", "Vdov"]
+v_char_wised = env.EX_CMD in ["Xdov", "Vdov"]
 
 
 # USER_SNIPPET_BEGIN: handle_one_line
@@ -43,9 +71,9 @@ def handle_block(block: str) -> str:
 def get_range() -> tuple[int, int, int, int]:
     res = []
     default_range = [
-        ("START_LNR", 1),
+        ("START_ROW", 1),
         ("START_COL", 1),
-        ("END_LNR", 1),
+        ("END_ROW", 1),
         ("END_COL", -1),
     ]
     for key, default in default_range:
@@ -56,47 +84,64 @@ def get_range() -> tuple[int, int, int, int]:
     return tuple(res)
 
 
-def line_do():
-    start_lnr, start_col, end_lnr, end_col = get_range()
+def get_ending(content: str):
+    for item in ["\r\n", "\n", "\r"]:
+        if content.endswith(item):
+            return item
+    return ""
 
-    cur_lnr = start_lnr
+
+def line_do():
+    logger.info("line do called")
+    start_row, start_col, end_row, end_col = get_range()
+
+    cur_row = start_row
     while line := sys.stdin.readline():
         head, tail = "", ""
-        if cur_lnr == end_lnr:
-            line, tail = line[0:end_col], line[end_col:-1]
-        if cur_lnr == start_lnr:
-            head, line = line[0 : start_col - 1], line[start_col - 1 : -1]
+        if cur_row == end_row:
+            line, tail = line[0:end_col], line[end_col:]
+        if cur_row == start_row:
+            head, line = line[0 : start_col - 1], line[start_col - 1 :]
 
-        res = handle_one_line(line, cur_lnr) or ""
+        res = handle_one_line(line, cur_row) or ""
 
+        logger.info(f"{head=} {line=} {res=} {tail=}")
         sys.stdout.write("".join([head, res, tail]))
-        cur_lnr += 1
+        cur_row += 1
 
 
 def block_do():
-    _, start_col, _, end_col = get_range()
+    logger.info("block do called")
 
     block = sys.stdin.read()
+
+    _, start_col, _, _ = get_range()
+    tail_len = int(env.TAIL_LEN or 0)
+    ending_len = len(get_ending(block))
+
     head, target, tail = (
         block[0 : start_col - 1],
-        block[start_col - 1 : end_col],
-        block[end_col:-1],
+        block[start_col - 1 : len(block) - tail_len - ending_len],
+        block[len(block) - tail_len - ending_len :],
     )
 
     res = handle_block(target)
+
+    logger.info(f"{tail_len=} {head=} {target=} {res=} {tail=}")
 
     sys.stdout.write("".join([head, res, tail]))
 
 
 def main():
-    call_target = sys.argv[-1]
-    if call_target == "line_do":
-        line_do()
-    elif call_target == "block_do":
+    if v_block_wised:
         block_do()
     else:
         line_do()
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        logger.exception(e)
+        sys.exit(1)
