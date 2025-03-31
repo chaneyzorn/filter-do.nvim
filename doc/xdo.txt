@@ -1,4 +1,4 @@
-*xdo.txt*           For Neovim >= 0.8.0           Last change: 2025 January 07
+*xdo.txt*            For Neovim >= 0.8.0            Last change: 2025 March 31
 
 ==============================================================================
 Table of Contents                                      *xdo-table-of-contents*
