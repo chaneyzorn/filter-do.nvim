@@ -3,6 +3,11 @@ on:
   push:
     branches:
       - main
+    paths:
+      - README.md
+      - .github/workflows/documentation.yml
+permissions:
+  contents: write
 jobs:
   documentation:
     name: Documentation
@@ -14,10 +19,6 @@ jobs:
         with:
           neovim: true
           version: stable
-      - name: Create API Documentation
-        run: |
-          nvim --version
-          make gen_doc
       - name: Create User Documentation
         uses: kdheepak/panvimdoc@main
         with:
@@ -32,6 +33,4 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "docs(vimdoc): auto-gen doc and tags"
-          commit_user_name: "github-actions[bot]"
-          commit_user_email: "github-actions[bot]@users.noreply.github.com"
-          commit_author: "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
+          branch: ${{ github.head_ref }}

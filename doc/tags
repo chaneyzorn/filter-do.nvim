@@ -4,6 +4,4 @@ xdo-credit	xdo.txt	/*xdo-credit*
 xdo-features	xdo.txt	/*xdo-features*
 xdo-installation	xdo.txt	/*xdo-installation*
 xdo-table-of-contents	xdo.txt	/*xdo-table-of-contents*
-xdo.Configuration	xdo_types.txt	/*xdo.Configuration*
-xdo.hello_world()	xdo_api.txt	/*xdo.hello_world()*
 xdo.txt	xdo.txt	/*xdo.txt*
