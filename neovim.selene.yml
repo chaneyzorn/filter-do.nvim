@@ -1,5 +1,0 @@
-# used by selene lua checker
-base: lua51
-globals:
-  vim:
-    any: true
