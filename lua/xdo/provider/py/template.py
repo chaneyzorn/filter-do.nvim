@@ -16,9 +16,7 @@ def setup_logger():
     file_handler = logging.FileHandler(log_file_path)
     file_handler.setLevel(logging.INFO)
 
-    formatter = logging.Formatter(
-        f"%(asctime)s - {script_name} - %(levelname)s - %(message)s"
-    )
+    formatter = logging.Formatter(f"%(asctime)s - {script_name} - %(message)s")
     file_handler.setFormatter(formatter)
 
     logger.addHandler(file_handler)
@@ -65,7 +63,7 @@ def handle_block(block: str) -> str:
     return block  # USER_INPUT: handle_block
 
 
-# USER_SNIPPET_END: handle_one_line
+# USER_SNIPPET_END: handle_block
 
 
 def get_range() -> tuple[int, int, int, int]:
@@ -74,7 +72,7 @@ def get_range() -> tuple[int, int, int, int]:
         ("START_ROW", 1),
         ("START_COL", 1),
         ("END_ROW", 1),
-        ("END_COL", -1),
+        ("END_COL", 2147483647),
     ]
     for key, default in default_range:
         if value := os.environ.get(key):
@@ -103,10 +101,10 @@ def line_do():
         if cur_row == start_row:
             head, line = line[0 : start_col - 1], line[start_col - 1 :]
 
-        res = handle_one_line(line, cur_row) or ""
+        re = handle_one_line(line, cur_row) or ""
 
-        logger.info(f"{head=} {line=} {res=} {tail=}")
-        sys.stdout.write("".join([head, res, tail]))
+        logger.info(f"{head=} {line=} {re=} {tail=}")
+        sys.stdout.write("".join([head, re, tail]))
         cur_row += 1
 
 
@@ -119,17 +117,13 @@ def block_do():
     tail_len = int(env.TAIL_LEN or 0)
     ending_len = len(get_ending(block))
 
-    head, target, tail = (
-        block[0 : start_col - 1],
-        block[start_col - 1 : len(block) - tail_len - ending_len],
-        block[len(block) - tail_len - ending_len :],
-    )
+    head = block[0 : start_col - 1]
+    target = block[start_col - 1 : len(block) - tail_len - ending_len]
+    tail = block[len(block) - tail_len - ending_len :]
 
-    res = handle_block(target)
-
-    logger.info(f"{tail_len=} {head=} {target=} {res=} {tail=}")
-
-    sys.stdout.write("".join([head, res, tail]))
+    re = handle_block(target)
+    logger.info(f"{tail_len=} {head=} {target=} {re=} {tail=}")
+    sys.stdout.write("".join([head, re, tail]))
 
 
 def main():
