@@ -1,8 +1,8 @@
 local xdo_cmd_t = {
-  Xdo = "Exec code for each line in the range",
-  Xdov = "Exec code for each line in the char-wised range",
-  Vdo = "Exec code for the whole line-wised range",
-  Vdov = "Exec code for the whole char-wised range",
+  Xdo = "Exec code on each line in the range",
+  Xdov = "Exec code on each line in the char-wised range",
+  Vdo = "Exec code on the whole line-wised range",
+  Vdov = "Exec code on the whole char-wised range",
 }
 
 for cmd_name, desc in pairs(xdo_cmd_t) do
@@ -14,11 +14,31 @@ for cmd_name, desc in pairs(xdo_cmd_t) do
     bang = false,
     nargs = "+",
     range = "%",
-    complete = function()
-      -- TODO: improve complete
-      -- args: arg0, cmdstr, curpos
+    complete = function(arg_lead, cmdline, curpos)
+      -- args: arg_lead, cmdline, curpos
+      print(string.format("arg_lead=%s cmdline=%s curpos=%s", arg_lead, cmdline, curpos))
+
+      local part1 = {}
       local providers = require("xdo.provider").list_providers()
-      return vim.tbl_keys(providers)
+      for k in pairs(providers) do
+        table.insert(part1, k)
+        table.insert(part1, k .. "+")
+      end
+
+      local part1_present = false
+      for _, v in pairs(part1) do
+        if cmdline:find(v) ~= nil then
+          part1_present = true
+        end
+      end
+
+      if not part1_present then
+        return part1
+      elseif cmdline:find("return") == nil then
+        return { "return" }
+      else
+        return {}
+      end
     end,
   })
 end
