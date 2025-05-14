@@ -133,15 +133,17 @@ function P:exec_filter(ctx)
   local filter_cmd = self.pinfo.filter_cmd(src_path)
   local env_str = U.env_kv_str(ctx.env)
 
-  return vim.api.nvim_cmd({
-    cmd = "!",
-    args = { env_str, unpack(filter_cmd) },
-    range = { ctx.buf_range.start_row, ctx.buf_range.end_row },
-    mods = {
-      keepjumps = true,
-      keepmarks = true,
-    },
-  }, {})
+  return vim.api.nvim_buf_call(ctx.buf_range.bufnr, function()
+    vim.api.nvim_cmd({
+      cmd = "!",
+      args = { env_str, unpack(filter_cmd) },
+      range = { ctx.buf_range.start_row, ctx.buf_range.end_row },
+      mods = {
+        keepjumps = true,
+        keepmarks = true,
+      },
+    }, {})
+  end)
 end
 
 ---@type { [string]: xdo.Provider }
