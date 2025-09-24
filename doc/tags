@@ -1,7 +1,8 @@
-xdo-commands	xdo.txt	/*xdo-commands*
-xdo-configuration	xdo.txt	/*xdo-configuration*
-xdo-credit	xdo.txt	/*xdo-credit*
-xdo-features	xdo.txt	/*xdo-features*
-xdo-installation	xdo.txt	/*xdo-installation*
+xdo-filter-do.nvim	xdo.txt	/*xdo-filter-do.nvim*
+xdo-filter-do.nvim-commands	xdo.txt	/*xdo-filter-do.nvim-commands*
+xdo-filter-do.nvim-configuration	xdo.txt	/*xdo-filter-do.nvim-configuration*
+xdo-filter-do.nvim-credit	xdo.txt	/*xdo-filter-do.nvim-credit*
+xdo-filter-do.nvim-features	xdo.txt	/*xdo-filter-do.nvim-features*
+xdo-filter-do.nvim-installation	xdo.txt	/*xdo-filter-do.nvim-installation*
 xdo-table-of-contents	xdo.txt	/*xdo-table-of-contents*
 xdo.txt	xdo.txt	/*xdo.txt*

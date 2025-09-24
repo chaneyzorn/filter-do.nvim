@@ -1,65 +1,54 @@
-*xdo.txt*            For Neovim >= 0.8.0            Last change: 2025 March 31
+*xdo.txt*          For Neovim >= 0.8.0          Last change: 2025 September 24
 
 ==============================================================================
 Table of Contents                                      *xdo-table-of-contents*
 
-1. Features                                                     |xdo-features|
-2. Installation                                             |xdo-installation|
-3. Configuration                                           |xdo-configuration|
-4. Commands                                                     |xdo-commands|
-5. Credit                                                         |xdo-credit|
-xdo.nvimThe missing :jsdo for neovim and more.
-
-
-
-
-
-
-
-
-
-
+1. filter-do.nvim                                         |xdo-filter-do.nvim|
+  - Features                                     |xdo-filter-do.nvim-features|
+  - Installation                             |xdo-filter-do.nvim-installation|
+  - Configuration                           |xdo-filter-do.nvim-configuration|
+  - Commands                                     |xdo-filter-do.nvim-commands|
+  - Credit                                         |xdo-filter-do.nvim-credit|
 
 ==============================================================================
-1. Features                                                     *xdo-features*
+1. filter-do.nvim                                         *xdo-filter-do.nvim*
+
+The missing `:jsdo` and more.
+
+
+FEATURES                                         *xdo-filter-do.nvim-features*
 
 - feature-1
 
 
-==============================================================================
-2. Installation                                             *xdo-installation*
+INSTALLATION                                 *xdo-filter-do.nvim-installation*
 
 - lazy.nvim <https://github.com/folke/lazy.nvim>
 
 >lua
     {
         "chaneyzorn/xdo.nvim",
-        version = "*",
         opts={}
     }
 <
 
 
-==============================================================================
-3. Configuration                                           *xdo-configuration*
+CONFIGURATION                               *xdo-filter-do.nvim-configuration*
 
 - lazy.nvim <https://github.com/folke/lazy.nvim>
 
 >lua
     {
         "chaneyzorn/xdo.nvim",
-        version = "*",
         opts={}
     }
 <
 
 
-==============================================================================
-4. Commands                                                     *xdo-commands*
+COMMANDS                                         *xdo-filter-do.nvim-commands*
 
 
-==============================================================================
-5. Credit                                                         *xdo-credit*
+CREDIT                                             *xdo-filter-do.nvim-credit*
 
 - ColinKennedy/nvim-best-practices-plugin-template
     <https://github.com/ColinKennedy/nvim-best-practices-plugin-template>
