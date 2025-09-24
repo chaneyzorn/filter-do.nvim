@@ -1,4 +1,4 @@
----@module 'xdo'
+---@module 'filter_do'
 
 local M = {}
 

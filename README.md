@@ -1,53 +1,36 @@
-<h3 align="center">xdo.nvim</h3>
+# filter-do.nvim
 
-<p align="center"> The missing <code>:jsdo</code> for neovim and more.</p>
+The missing `:jsdo` and more.
 
-<p align="center">
-    <a href="https://github.com/chaneyzorn/xdo.nvim/actions/workflows/llscheck.yml">
-        <img alt="linter" src="https://img.shields.io/github/actions/workflow/status/chaneyzorn/xdo.nvim/llscheck.yml?branch=main&label=Linter">
-    </a>
-    <a href="https://github.com/chaneyzorn/xdo.nvim/actions/workflows/stylua.yml">
-        <img alt="stylua" src="https://img.shields.io/github/actions/workflow/status/chaneyzorn/xdo.nvim/stylua.yml?branch=main&label=Stylua">
-    </a>
-    <a href="https://github.com/chaneyzorn/xdo.nvim/actions/workflows/documentation.yml">
-        <img alt="documentation" src="https://img.shields.io/github/actions/workflow/status/chaneyzorn/xdo.nvim/documentation.yml?branch=main&label=Documentation">
-    </a>
-    <a href="https://github.com/chaneyzorn/xdo.nvim/blob/main/LICENSE">
-        <img alt="License-MIT" src="https://img.shields.io/badge/License-MIT-blue">
-    </a>
-</p>
-
-# Features
+## Features
 
 - feature-1
 
-# Installation
+## Installation
 
 - [lazy.nvim](https://github.com/folke/lazy.nvim)
 
 ```lua
 {
     "chaneyzorn/xdo.nvim",
-    version = "*",
     opts={}
 }
 ```
 
-# Configuration
+## Configuration
 
 - [lazy.nvim](https://github.com/folke/lazy.nvim)
 
 ```lua
 {
     "chaneyzorn/xdo.nvim",
-    version = "*",
     opts={}
 }
 ```
 
-# Commands
+## Commands
 
-# Credit
+## Credit
 
 - [ColinKennedy/nvim-best-practices-plugin-template](https://github.com/ColinKennedy/nvim-best-practices-plugin-template)
 - [skywind3000/vim-text-process](https://github.com/skywind3000/vim-text-process)
