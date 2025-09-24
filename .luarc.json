@@ -4,11 +4,11 @@
   },
   "diagnostics": {
     "globals": ["vim"],
-    "libraryFiles": false
+    "libraryFiles": "Disable"
   },
   "workspace": {
     "checkThirdParty": false,
     "ignoreDir": [".dependencies"],
-    "library": ["$VIMRUNTIME", "${3rd}/luv/library", "${3rd}/busted/library"]
+    "library": ["$VIMRUNTIME", "/usr/share/nvim/runtime", "${3rd}/luv/library", "${3rd}/busted/library"]
   }
 }

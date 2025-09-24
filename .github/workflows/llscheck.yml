@@ -17,7 +17,7 @@ jobs:
         with:
           neovim: true
           version: stable
-      - uses: leafo/gh-actions-lua@v10
+      - uses: luarocks/gh-actions-lua@v11
         with:
           luaVersion: "luajit-openresty"
       - name: Install lua-language-server
@@ -25,11 +25,10 @@ jobs:
         with:
           tool_versions: |
             lua-language-server latest
-      - uses: leafo/gh-actions-luarocks@v4
+      - uses: luarocks/gh-actions-luarocks@v6
       - name: Install llscheck
         run: |
           luarocks install llscheck
-          luarocks install luacheck
           luarocks install nlua
       - name: Clone dependencies - busted
         uses: actions/checkout@v4
@@ -52,6 +51,3 @@ jobs:
       - name: llscheck
         run: |
           VIMRUNTIME=`nlua -e 'io.write(os.getenv("VIMRUNTIME"))'` llscheck --configpath .github/workflows/.luarc.json .
-      - name: luacheck
-        run: |
-          make luacheck

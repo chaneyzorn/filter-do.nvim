@@ -4,16 +4,12 @@ import { fileURLToPath } from "node:url";
 import { dirname, basename, join } from "node:path";
 import { stdin, stdout } from "node:process";
 
-const env = process.env;
-const vBlockWised = ["Vdo", "Vdov"].includes(env.EX_CMD);
-const vCharWised = ["Xdov", "Vdov"].includes(env.EX_CMD);
-
 function setupLogger() {
   const filePath = fileURLToPath(import.meta.url);
   const dirPath = dirname(filePath);
   const scriptName = basename(filePath);
 
-  const logFileName = "xdo_stub.log";
+  const logFileName = "filter_do.log";
   const logFilePath = join(dirPath, logFileName);
 
   const logStream = createWriteStream(logFilePath, { flags: "a" });
@@ -29,18 +25,6 @@ function setupLogger() {
 
 const logger = setupLogger();
 
-// USER_SNIPPET_BEGIN: handle_one_line
-async function handle_one_line(line, linenr) {
-  return line; // USER_INPUT: handle_one_line
-}
-// USER_SNIPPET_END: handle_one_line
-
-// USER_SNIPPET_BEGIN: handle_block
-async function handle_block(block) {
-  return block; // USER_INPUT: handle_block
-}
-// USER_SNIPPET_END: handle_block
-
 function getRange() {
   const defaultRange = [
     { key: "START_ROW", default: 1 },
@@ -54,14 +38,18 @@ function getRange() {
   });
 }
 
-function getEnding(content) {
-  const endings = ["\r\n", "\n", "\r"];
-  for (const item of endings) {
-    if (content.endsWith(item)) {
-      return item;
-    }
-  }
-  return "";
+/**
+ * Handle each line of the text.
+ *
+ * @param {string} line - One line of text from the vim buffer, typically ending with a newline character.
+ * @param {number} linenr - The line number in the Vim buffer.
+ * @returns {string} Processed text line.
+ *   - Return empty string to delete this line.
+ *   - Include `\n` to insert multiple lines of text.
+ *   - Remove the trailing `\n` to join the next line.
+ */
+async function handleOneLine(line, linenr) {
+  return line; // USER_CODE
 }
 
 function* lineIter(chunk) {
@@ -99,9 +87,7 @@ async function* readLinesFromStdin() {
   }
 }
 
-async function line_do() {
-  logger.log("line do called");
-
+async function runOneEachLine() {
   const [start_row, start_col, end_row, end_col] = getRange();
   let cur_row = start_row;
   for await (const line of readLinesFromStdin()) {
@@ -115,55 +101,15 @@ async function line_do() {
       target = target.slice(start_col - 1);
     }
 
-    const re = await handle_one_line(line, cur_row);
-    logger.log(JSON.stringify({ head, target, re, tail }));
-    stdout.write([head, re, tail].join(""));
+    const res = await handleOneLine(line, cur_row);
+    logger.log(JSON.stringify({ head, target, res, tail }));
+    stdout.write([head, res, tail].join(""));
     cur_row++;
   }
 }
 
-async function readAllStdin() {
-  return new Promise((resolve) => {
-    stdin.setEncoding("utf8");
-    const chunks = [];
-    stdin.on("data", (chunk) => {
-      chunks.push(chunk);
-    });
-    stdin.on("end", () => {
-      const block = chunks.join("");
-      resolve(block);
-    });
-  });
-}
-
-async function block_do() {
-  logger.log("block do called");
-
-  const block = await readAllStdin();
-
-  const [, start_col, ,] = getRange();
-  const tailLen = Number.parseInt(env.TAIL_LEN || 0);
-  const endingLen = getEnding(block).length;
-
-  const head = block.slice(0, start_col - 1);
-  const target = block.slice(start_col - 1, block.length - tailLen - endingLen);
-  const tail = block.slice(block.length - tailLen - endingLen);
-
-  const re = await handle_block(target);
-  logger.log(JSON.stringify({ tailLen, head, target, re, tail }));
-  stdout.write([head, re, tail].join(""));
-}
-
-async function main() {
-  if (vBlockWised) {
-    await block_do();
-  } else {
-    await line_do();
-  }
-}
-
 try {
-  await main();
+  await runOneEachLine();
 } catch (e) {
   logger.log(e.stack);
   process.exit(1);

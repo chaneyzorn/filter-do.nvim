@@ -1,17 +1,18 @@
----@module "xdo.cmd"
+---@module "filter_do.cmd"
 
-local U = require("xdo.util")
+local U = require("filter_do.util")
 
-local function parse_xdo_cmd_ctx(user_cmd)
+---@param user_cmd vim.api.keyset.create_user_command.command_args
+local function parse_fx_cmd_ctx(user_cmd)
   local bufnr = vim.api.nvim_get_current_buf()
   local sub_cmd = user_cmd.fargs[1]
-  local provider, scratch = string.match(sub_cmd, "^(%a+)(%+?)$")
+  local tpl_name, scratch = string.match(sub_cmd, "^(.+)(%+?)$")
   local code_snip = user_cmd.args:sub(#sub_cmd + 2)
+  local edit_scratch = scratch == "+"
+  local scratch_pre_fill = edit_scratch and code_snip or ""
+  local v_char_wised = user_cmd.name == "Fxv" and user_cmd.range == 2
 
-  local v_block_wised = user_cmd.name == "Vdo" or user_cmd.name == "Vdov"
-  local v_char_wised = (user_cmd.name == "Xdov" or user_cmd.name == "Vdov") and user_cmd.range == 2
-
-  ---@type Xdo.BufRange
+  ---@type filter_do.BufRange
   local buf_range = {
     bufnr = bufnr,
     start_row = user_cmd.line1,
@@ -21,6 +22,7 @@ local function parse_xdo_cmd_ctx(user_cmd)
     tail_len = -1,
   }
   if user_cmd.range == 0 then
+    -- default range is whole buffer
     buf_range = {
       bufnr = bufnr,
       start_row = 1,
@@ -34,9 +36,10 @@ local function parse_xdo_cmd_ctx(user_cmd)
     local _, lnum1, col1 = unpack(vim.fn.getcharpos("'<"))
     local _, lnum2, col2 = unpack(vim.fn.getcharpos("'>"))
     if lnum1 == user_cmd.line1 and lnum2 == user_cmd.line2 then
-      --- get line content without line-ending
+      -- get last line content without line-ending
       local last_line_len = vim.fn.strchars(vim.fn.getbufoneline(bufnr, lnum2))
-      --- cursor can move onto line-ending, which cause -1
+      -- length of last line that **excluded** from char wised range
+      -- cursor can move onto line-ending, which cause -1
       local tail_len = math.max(last_line_len - col2, -1)
       buf_range = {
         bufnr = bufnr,
@@ -49,7 +52,7 @@ local function parse_xdo_cmd_ctx(user_cmd)
     end
   end
 
-  ---@type xdo.EnvKv
+  ---@type filter_do.EnvKv
   local env = {
     START_ROW = string.format("%s", buf_range.start_row),
     END_ROW = string.format("%s", buf_range.end_row),
@@ -59,13 +62,13 @@ local function parse_xdo_cmd_ctx(user_cmd)
     EX_CMD = user_cmd.name,
   }
 
-  ---@type xdo.XdoCtx
+  ---@type filter_do.FxCtx
   local ctx = {
-    provider = provider,
+    tpl_name = tpl_name,
     code_snip = code_snip,
-    v_block_wised = v_block_wised,
     v_char_wised = v_char_wised,
-    edit_scratch = scratch == "+",
+    edit_scratch = edit_scratch,
+    scratch_pre_fill = scratch_pre_fill,
     buf_range = buf_range,
     env = env,
   }
@@ -73,23 +76,29 @@ local function parse_xdo_cmd_ctx(user_cmd)
   return ctx
 end
 
-local function xdo_fn(cmd)
-  local ctx = parse_xdo_cmd_ctx(cmd)
-  return require("xdo.api").xdo(ctx)
+---@param user_cmd vim.api.keyset.create_user_command.command_args
+local function fx_fn(user_cmd)
+  local ctx = parse_fx_cmd_ctx(user_cmd)
+  if ctx.edit_scratch then
+    -- TODO: support write mutil lines of code in dependent buffer
+    -- local ui = require("xdo.ui").new()
+    -- ui:open_xdo_scratch_win(ctx)
+  else
+    return require("filter_do.api").filter_do(ctx)
+  end
 end
 
 local M = {}
 
+---@param user_cmd vim.api.keyset.create_user_command.command_args
 function M.dispatch_cmd(user_cmd)
   local Fn = {
-    xdo = xdo_fn,
-    xdov = xdo_fn,
-    vdo = xdo_fn,
-    vdov = xdo_fn,
+    fx = fx_fn,
+    fxv = fx_fn,
   }
   local fn = Fn[string.lower(user_cmd.name)]
   if not fn then
-    U.msg_err(string.format("xdo: unknown cmd %s", user_cmd.name))
+    U.msg_err(string.format("filter_do.nvim: unknown cmd %s", user_cmd.name))
   end
   return fn(user_cmd)
 end

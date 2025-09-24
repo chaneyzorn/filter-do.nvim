@@ -4,7 +4,7 @@
   },
   "diagnostics": {
     "globals": ["vim"],
-    "libraryFiles": false
+    "libraryFiles": "Disable"
   },
   "workspace": {
     "checkThirdParty": false,
