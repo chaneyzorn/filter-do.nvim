@@ -1,3 +1,6 @@
+# Filter running on the selected text of the vim buffer
+# The wrapper code will be folded to focus on the user code {{{
+
 import logging
 import os
 import sys
@@ -30,6 +33,9 @@ def get_ending(content: str):
     return ""
 
 
+# }}}
+
+
 def handle_block(text: str) -> str:
     """Handle the block of text.
 
@@ -37,6 +43,9 @@ def handle_block(text: str) -> str:
     :return: Processed text block.
     """
     return text  # USER_CODE
+
+
+# user code ended {{{
 
 
 def run_on_block_text():
@@ -61,3 +70,6 @@ if __name__ == "__main__":
     except Exception as e:
         logger.exception(e)
         sys.exit(1)
+
+# vim: set foldmethod=marker foldlevel=0:
+# }}}

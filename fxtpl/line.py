@@ -1,3 +1,6 @@
+# Filter running on each line of the vim buffer
+# The wrapper code will be folded to focus on the user code {{{
+
 import logging
 import os
 import sys
@@ -39,6 +42,9 @@ def get_range() -> tuple[int, int, int, int]:
     return tuple(res)
 
 
+# }}}
+
+
 def handle_one_line(line: str, linenr: int) -> str:
     """Handle each line of the text.
 
@@ -50,6 +56,9 @@ def handle_one_line(line: str, linenr: int) -> str:
         - Remove the trailing `\n` to join the next line.
     """
     return line  # USER_CODE
+
+
+# user code ended {{{
 
 
 def run_on_each_line():
@@ -76,3 +85,6 @@ if __name__ == "__main__":
     except Exception as e:
         logger.exception(e)
         sys.exit(1)
+
+# vim: set foldmethod=marker foldlevel=0:
+# }}}
