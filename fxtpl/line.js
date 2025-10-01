@@ -1,3 +1,6 @@
+// Filter running on each line of the vim buffer
+// The wrapper code will be folded to focus on the user code {{{
+
 import { Console } from "node:console";
 import { createWriteStream } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -38,6 +41,8 @@ function getRange() {
   });
 }
 
+// }}}
+
 /**
  * Handle each line of the text.
  *
@@ -51,6 +56,8 @@ function getRange() {
 async function handleOneLine(line, linenr) {
   return line; // USER_CODE
 }
+
+// user code ended {{{
 
 function* lineIter(chunk) {
   let index = 0;
@@ -114,3 +121,6 @@ try {
   logger.log(e.stack);
   process.exit(1);
 }
+
+// vim: set foldmethod=marker foldlevel=0:
+// }}}

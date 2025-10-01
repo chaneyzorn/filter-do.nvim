@@ -1,3 +1,6 @@
+// Filter running on the selected text of the vim buffer
+// The wrapper code will be folded to focus on the user code {{{
+
 import { Console } from "node:console";
 import { createWriteStream } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -27,6 +30,8 @@ function setupLogger() {
 
 const logger = setupLogger();
 
+// }}}
+
 /**
  * Handle the block of text.
  *
@@ -36,6 +41,8 @@ const logger = setupLogger();
 async function handleBlock(text) {
   return text; // USER_CODE
 }
+
+// user code ended {{{
 
 function getEnding(content) {
   const endings = ["\r\n", "\n", "\r"];
@@ -83,3 +90,6 @@ try {
   logger.log(e.stack);
   process.exit(1);
 }
+
+// vim: set foldmethod=marker foldlevel=0:
+// }}}
