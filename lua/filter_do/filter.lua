@@ -126,6 +126,21 @@ function F:stub_path()
   return vim.fs.joinpath(tmp_path, string.format("fx_stub.%s", self.tpl_name))
 end
 
+---@return string|nil
+function F:get_exists_stub()
+  local stub_path = self:stub_path()
+  if not stub_path then
+    return nil
+  end
+
+  local stat = vim.uv.fs_stat(stub_path)
+  if not stat then
+    return nil
+  end
+
+  return stub_path
+end
+
 ---@param ctx filter_do.FxCtx
 ---@return string|nil
 function F:gen_stub_file(ctx)
@@ -158,9 +173,19 @@ end
 
 ---@param ctx filter_do.FxCtx
 function F:exec_filter(ctx)
-  local src_path = self:gen_stub_file(ctx)
-  if not src_path then
-    return
+  local src_path = nil
+  if ctx.use_last_code then
+    src_path = self:get_exists_stub()
+    if not src_path then
+      local err_msg = string.format("filter_do.nvim: no previous code found for filter %s", self.tpl_name)
+      U.msg_err(err_msg)
+      return
+    end
+  else
+    src_path = self:gen_stub_file(ctx)
+    if not src_path then
+      return
+    end
   end
 
   local tpl_ctx = self.finfo.pre_action({ src_path = src_path })

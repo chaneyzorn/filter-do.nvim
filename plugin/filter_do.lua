@@ -1,6 +1,6 @@
 local fx_cmd_t = {
-  Fx = "Filter-Do on the buffer text",
-  Fxv = "Filter-Do on the buffer text in the char-wised range",
+  Fx = "Execute filter on the buffer text line-wised",
+  Fxv = "Execute filter on the buffer text char-wised",
 }
 
 for cmd_name, desc in pairs(fx_cmd_t) do
@@ -22,6 +22,7 @@ for cmd_name, desc in pairs(fx_cmd_t) do
       for k in pairs(filters) do
         table.insert(part1, k)
         table.insert(part1, k .. "+")
+        table.insert(part1, k .. "-")
       end
 
       local part1_present = false
