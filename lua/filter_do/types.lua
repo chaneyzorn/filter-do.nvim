@@ -23,5 +23,6 @@
 ---@field code_snip string
 ---@field v_char_wised boolean
 ---@field edit_scratch boolean
+---@field use_last_code boolean
 ---@field scratch_pre_fill string
 ---@field env filter_do.EnvKv
