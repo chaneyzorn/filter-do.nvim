@@ -6,10 +6,10 @@ local U = require("filter_do.util")
 local function parse_fx_cmd_ctx(user_cmd)
   local bufnr = vim.api.nvim_get_current_buf()
   local sub_cmd = user_cmd.fargs[1]
-  local tpl_name, modifier = string.match(sub_cmd, "^(.-)([+-]?)$")
+  local tpl_name, modifier = string.match(sub_cmd, "^(.-)([+-]*)$")
   local code_snip = user_cmd.args:sub(#sub_cmd + 2)
-  local edit_scratch = modifier == "+"
-  local use_last_code = modifier == "-"
+  local edit_scratch = modifier:find("+") ~= nil
+  local use_last_code = modifier:find("-") ~= nil
   local scratch_pre_fill = edit_scratch and code_snip or ""
   local v_char_wised = user_cmd.name == "Fxv" and user_cmd.range == 2
 
