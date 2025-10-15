@@ -23,6 +23,7 @@ for cmd_name, desc in pairs(fx_cmd_t) do
         table.insert(part1, k)
         table.insert(part1, k .. "+")
         table.insert(part1, k .. "-")
+        table.insert(part1, k .. "+-")
       end
 
       local part1_present = false

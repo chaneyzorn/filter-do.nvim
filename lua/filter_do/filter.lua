@@ -141,9 +141,19 @@ function F:get_exists_stub()
   return stub_path
 end
 
----@param ctx filter_do.FxCtx
+---@param ctx filter_do.FxCtx|nil
 ---@return string|nil
 function F:gen_stub_file(ctx)
+  if ctx and ctx.use_last_code then
+    local stub_path = self:get_exists_stub()
+    if not stub_path then
+      local err_msg = string.format("filter_do.nvim: no previous code found for filter %s", self.tpl_name)
+      U.msg_err(err_msg)
+      return nil
+    end
+    return stub_path
+  end
+
   local tpl = self:load_template_file()
   if not tpl then
     return nil
@@ -161,10 +171,14 @@ function F:gen_stub_file(ctx)
     return nil
   end
 
-  local pattern = "(.*\n%s*)(.-USER_CODE)(.*)"
-  local content = string.gsub(tpl.content, pattern, function(head, _, tail)
-    return head .. ctx.code_snip .. tail
-  end)
+  local content = tpl.content
+  if ctx and ctx.code_snip and #ctx.code_snip > 0 then
+    local pattern = "(.*\n%s*)(.-USER_CODE)(.*)"
+    content = string.gsub(tpl.content, pattern, function(head, _, tail)
+      return head .. ctx.code_snip .. tail
+    end)
+  end
+
   f:write(content)
   f:close()
 
@@ -172,20 +186,13 @@ function F:gen_stub_file(ctx)
 end
 
 ---@param ctx filter_do.FxCtx
-function F:exec_filter(ctx)
-  local src_path = nil
-  if ctx.use_last_code then
-    src_path = self:get_exists_stub()
-    if not src_path then
-      local err_msg = string.format("filter_do.nvim: no previous code found for filter %s", self.tpl_name)
-      U.msg_err(err_msg)
-      return
-    end
-  else
+---@param src_path string|nil
+function F:exec_filter(ctx, src_path)
+  if src_path == nil then
     src_path = self:gen_stub_file(ctx)
-    if not src_path then
-      return
-    end
+  end
+  if not src_path then
+    return
   end
 
   local tpl_ctx = self.finfo.pre_action({ src_path = src_path })
