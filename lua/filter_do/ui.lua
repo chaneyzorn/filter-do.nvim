@@ -36,12 +36,24 @@ function M:open_scratch_win(ctx)
 
   -- create windows
   local win_height = math.floor(vim.o.lines * 0.8)
-  local win_width = math.floor((vim.o.columns * 0.8) * 0.5)
+  local win_width = math.floor((vim.o.columns * 0.9) * 0.5)
+  local target_win_id = vim.api.nvim_open_win(ctx.buf_range.bufnr, false, {
+    relative = "editor",
+    border = "rounded",
+    row = math.floor(vim.o.lines * 0.1) - 1,
+    col = math.floor(vim.o.columns * 0.05),
+    width = win_width - 1,
+    height = win_height,
+    title = string.format(" target: %s ", vim.fn.fnamemodify(vim.api.nvim_buf_get_name(ctx.buf_range.bufnr), ":~:.")),
+    title_pos = "center",
+  })
+  self.target_win_id = target_win_id
+
   local filter_win_id = vim.api.nvim_open_win(scratch_buf_id, true, {
     relative = "editor",
     border = "rounded",
-    row = math.floor(vim.o.lines * 0.1),
-    col = math.floor(vim.o.columns * 0.1),
+    row = math.floor(vim.o.lines * 0.1) - 1,
+    col = math.floor(vim.o.columns * 0.05) + win_width + 1,
     width = win_width - 1,
     height = win_height,
     title = string.format(" filter-do: %s ", ctx.tpl_name),
@@ -62,18 +74,6 @@ function M:open_scratch_win(ctx)
     footer_pos = "center",
   })
   self.filter_win_id = filter_win_id
-
-  local target_win_id = vim.api.nvim_open_win(ctx.buf_range.bufnr, false, {
-    relative = "editor",
-    border = "rounded",
-    row = math.floor(vim.o.lines * 0.1),
-    col = math.floor(vim.o.columns * 0.1) + win_width + 1,
-    width = win_width - 1,
-    height = win_height,
-    title = string.format(" target: %s ", vim.fn.fnamemodify(vim.api.nvim_buf_get_name(ctx.buf_range.bufnr), ":~:.")),
-    title_pos = "center",
-  })
-  self.target_win_id = target_win_id
 
   self:config_scratch_buf()
   self:config_float_win()
