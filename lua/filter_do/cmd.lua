@@ -10,7 +10,6 @@ local function parse_fx_cmd_ctx(user_cmd)
   local code_snip = user_cmd.args:sub(#sub_cmd + 2)
   local edit_scratch = modifier:find("+") ~= nil
   local use_last_code = modifier:find("-") ~= nil
-  local scratch_pre_fill = edit_scratch and code_snip or ""
   local v_char_wised = user_cmd.name == "Fxv" and user_cmd.range == 2
 
   ---@type filter_do.BufRange
@@ -70,7 +69,6 @@ local function parse_fx_cmd_ctx(user_cmd)
     v_char_wised = v_char_wised,
     edit_scratch = edit_scratch,
     use_last_code = use_last_code,
-    scratch_pre_fill = scratch_pre_fill,
     buf_range = buf_range,
     env = env,
   }
@@ -82,9 +80,8 @@ end
 local function fx_fn(user_cmd)
   local ctx = parse_fx_cmd_ctx(user_cmd)
   if ctx.edit_scratch then
-    -- TODO: support write mutil lines of code in dependent buffer
-    -- local ui = require("xdo.ui").new()
-    -- ui:open_xdo_scratch_win(ctx)
+    local ui = require("filter_do.ui").new()
+    ui:open_scratch_win(ctx)
   else
     return require("filter_do.api").filter_do(ctx)
   end
