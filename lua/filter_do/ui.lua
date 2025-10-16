@@ -11,6 +11,40 @@ function M.new()
   return self
 end
 
+local function gen_buf_range_footer(ctx)
+  if ctx.v_char_wised then
+    local range_mode = "Visual-Range"
+    local end_col = ctx.buf_range.end_col
+    if end_col == vim.v.maxcol then
+      end_col = "$"
+    end
+    return {
+      { " " },
+      { string.format(" %s ", range_mode), "Visual" },
+      { " " },
+      { string.format(" start_row: %s ", ctx.buf_range.start_row), "CursorLine" },
+      { " " },
+      { string.format(" start_col: %s ", ctx.buf_range.start_col), "CursorLine" },
+      { " " },
+      { string.format(" end_row: %s ", ctx.buf_range.end_row), "CursorLine" },
+      { " " },
+      { string.format(" end_col: %s ", end_col), "CursorLine" },
+      { " " },
+    }
+  end
+
+  local range_mode = "Line-Range"
+  return {
+    { " " },
+    { string.format(" %s ", range_mode), "Visual" },
+    { " " },
+    { string.format(" start_row: %s ", ctx.buf_range.start_row), "CursorLine" },
+    { " " },
+    { string.format(" end_row: %s ", ctx.buf_range.end_row), "CursorLine" },
+    { " " },
+  }
+end
+
 ---@param ctx filter_do.FxCtx
 function M:open_scratch_win(ctx)
   -- ensure stub file exists
@@ -46,6 +80,8 @@ function M:open_scratch_win(ctx)
     height = win_height,
     title = string.format(" target: %s ", vim.fn.fnamemodify(vim.api.nvim_buf_get_name(ctx.buf_range.bufnr), ":~:.")),
     title_pos = "center",
+    footer = gen_buf_range_footer(ctx),
+    footer_pos = "center",
   })
   self.target_win_id = target_win_id
 
