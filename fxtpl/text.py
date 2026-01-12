@@ -25,14 +25,6 @@ def setup_logger():
 
 logger = setup_logger()
 
-
-def get_ending(content: str):
-    for item in ["\r\n", "\n", "\r"]:
-        if content.endswith(item):
-            return item
-    return ""
-
-
 # }}}
 
 
@@ -49,19 +41,8 @@ def handle_block(text: str) -> str:
 
 
 def run_on_block_text():
-    text = sys.stdin.read()
-
-    start_col = int(os.environ.get("START_COL", 1))
-    tail_len = int(os.environ.get("TAIL_LEN", 0))
-    ending_len = len(get_ending(text))
-
-    head = text[0 : start_col - 1]
-    target = text[start_col - 1 : len(text) - tail_len - ending_len]
-    tail = text[len(text) - tail_len - ending_len :]
-
-    res = handle_block(target)
-    logger.info(f"{tail_len=} {head=} {target=} {res=} {tail=}")
-    sys.stdout.write("".join([head, res, tail]))
+    res = handle_block(sys.stdin.read())
+    sys.stdout.write(res)
 
 
 if __name__ == "__main__":

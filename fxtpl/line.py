@@ -25,23 +25,6 @@ def setup_logger():
 
 logger = setup_logger()
 
-
-def get_range() -> tuple[int, int, int, int]:
-    res = []
-    default_range = [
-        ("START_ROW", 1),
-        ("START_COL", 1),
-        ("END_ROW", 1),
-        ("END_COL", 2147483647),
-    ]
-    for key, default in default_range:
-        if value := os.environ.get(key):
-            res.append(int(value))
-        else:
-            res.append(default)
-    return tuple(res)
-
-
 # }}}
 
 
@@ -62,20 +45,10 @@ def handle_one_line(line: str, linenr: int) -> str:
 
 
 def run_on_each_line():
-    start_row, start_col, end_row, end_col = get_range()
-
-    cur_row = start_row
+    cur_row = int(os.getenv("START_ROW", "1"))
     while line := sys.stdin.readline():
-        head, tail = "", ""
-        if cur_row == end_row:
-            line, tail = line[0:end_col], line[end_col:]
-        if cur_row == start_row:
-            head, line = line[0 : start_col - 1], line[start_col - 1 :]
-
         res = handle_one_line(line, cur_row) or ""
-
-        logger.info(f"{head=} {line=} {res=} {tail=}")
-        sys.stdout.write("".join([head, res, tail]))
+        sys.stdout.write(res)
         cur_row += 1
 
 

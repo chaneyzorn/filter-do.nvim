@@ -15,7 +15,6 @@
 ---@field end_row integer
 ---@field start_col integer
 ---@field end_col integer
----@field tail_len integer
 
 ---@class filter_do.FxCtx
 ---@field buf_range filter_do.BufRange

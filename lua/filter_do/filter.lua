@@ -185,9 +185,64 @@ function F:gen_stub_file(ctx)
   return stub_path
 end
 
+function F:copy_range_to_new_buf(ctx)
+  local lines = {}
+  if ctx.v_char_wised then
+    lines = vim.api.nvim_buf_get_text(
+      ctx.buf_range.bufnr,
+      ctx.buf_range.start_row - 1,
+      ctx.buf_range.start_col - 1,
+      ctx.buf_range.end_row - 1,
+      ctx.buf_range.end_col,
+      {}
+    )
+  else
+    lines = vim.api.nvim_buf_get_lines( -- keep line wrapping, make stylua happy
+      ctx.buf_range.bufnr,
+      ctx.buf_range.start_row - 1,
+      ctx.buf_range.end_row,
+      false
+    )
+  end
+
+  local new_buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_lines(new_buf, 0, -1, false, lines)
+  return new_buf
+end
+
+function F:set_range_with_buf_text(ctx, src_buf)
+  local lines = vim.api.nvim_buf_get_lines(src_buf, 0, -1, false)
+  if ctx.v_char_wised then
+    vim.api.nvim_buf_set_text(
+      ctx.buf_range.bufnr,
+      ctx.buf_range.start_row - 1,
+      ctx.buf_range.start_col - 1,
+      ctx.buf_range.end_row - 1,
+      ctx.buf_range.end_col,
+      lines
+    )
+  else
+    vim.api.nvim_buf_set_lines( -- keep line wrapping, make stylua happy
+      ctx.buf_range.bufnr,
+      ctx.buf_range.start_row - 1,
+      ctx.buf_range.end_row,
+      false,
+      lines
+    )
+  end
+end
+
 ---@param ctx filter_do.FxCtx
 ---@param src_path string|nil
 function F:exec_filter(ctx, src_path)
+  local modifiable = vim.api.nvim_get_option_value("modifiable", { buf = ctx.buf_range.bufnr })
+  local readonly = vim.api.nvim_get_option_value("readonly", { buf = ctx.buf_range.bufnr })
+  if readonly or not modifiable then
+    local err_msg = string.format("filter_do.nvim: buffer %s is not modifiable", ctx.buf_range.bufnr)
+    U.msg_err(err_msg)
+    return
+  end
+
   if src_path == nil then
     src_path = self:gen_stub_file(ctx)
   end
@@ -209,6 +264,27 @@ function F:exec_filter(ctx, src_path)
     return
   end
 
+  if ctx.v_char_wised then
+    local new_buf = self:copy_range_to_new_buf(ctx)
+    local res_code = vim.api.nvim_buf_call(new_buf, function()
+      vim.api.nvim_cmd({
+        cmd = "!",
+        args = { U.env_kv_str(ctx.env), unpack(filter_cmd) },
+        range = { 1, vim.api.nvim_buf_line_count(new_buf) },
+      }, {})
+      local res_code = vim.v.shell_error
+      if res_code ~= 0 then
+        U.msg_err(string.format("filter_do.nvim: %s failed with code %s", self.tpl_name, res_code))
+      end
+      return res_code
+    end)
+    if res_code == 0 then
+      self:set_range_with_buf_text(ctx, new_buf)
+    end
+    vim.api.nvim_buf_delete(new_buf, { force = true })
+    return res_code
+  end
+
   return vim.api.nvim_buf_call(ctx.buf_range.bufnr, function()
     vim.api.nvim_cmd({
       cmd = "!",
@@ -219,6 +295,11 @@ function F:exec_filter(ctx, src_path)
         keepmarks = true,
       },
     }, {})
+    local res_code = vim.v.shell_error
+    if res_code ~= 0 then
+      U.msg_err(string.format("filter_do.nvim: %s failed with code %s", self.tpl_name, res_code))
+    end
+    return res_code
   end)
 end
 

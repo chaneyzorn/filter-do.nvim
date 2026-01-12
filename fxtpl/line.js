@@ -7,6 +7,17 @@ import { fileURLToPath } from "node:url";
 import { dirname, basename, join } from "node:path";
 import { stdin, stdout } from "node:process";
 
+function dateTimeStr() {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
 function setupLogger() {
   const filePath = fileURLToPath(import.meta.url);
   const dirPath = dirname(filePath);
@@ -17,29 +28,14 @@ function setupLogger() {
 
   const logStream = createWriteStream(logFilePath, { flags: "a" });
   const logger = new Console({ stdout: logStream, stderr: logStream });
-  return {
-    log: (message) => {
-      const timestamp = new Date().toLocaleString("sv");
-      const msg = `${timestamp} - ${scriptName} - ${message}`;
-      logger.log(msg);
-    },
+  logger.log = function (message, ...optionalParams) {
+    const msg = `${dateTimeStr()} - ${scriptName} - ${message}`;
+    Console.prototype.log.call(this, msg, ...optionalParams);
   };
+  return logger;
 }
 
 const logger = setupLogger();
-
-function getRange() {
-  const defaultRange = [
-    { key: "START_ROW", default: 1 },
-    { key: "START_COL", default: 1 },
-    { key: "END_ROW", default: 1 },
-    { key: "END_COL", default: 2147483647 },
-  ];
-  return defaultRange.map(({ key, default: defaultValue }) => {
-    const value = process.env[key];
-    return value ? Number.parseInt(value) : defaultValue;
-  });
-}
 
 // }}}
 
@@ -95,22 +91,10 @@ async function* readLinesFromStdin() {
 }
 
 async function runOneEachLine() {
-  const [start_row, start_col, end_row, end_col] = getRange();
-  let cur_row = start_row;
+  let cur_row = Number.parseInt(process.env.START_ROW || "1", 10);
   for await (const line of readLinesFromStdin()) {
-    let [head, target, tail] = ["", line, ""];
-    if (cur_row === end_row) {
-      target = line.slice(0, end_col);
-      tail = line.slice(end_col);
-    }
-    if (cur_row === start_row) {
-      head = target.slice(0, start_col - 1);
-      target = target.slice(start_col - 1);
-    }
-
     const res = await handleOneLine(line, cur_row);
-    logger.log(JSON.stringify({ head, target, res, tail }));
-    stdout.write([head, res, tail].join(""));
+    stdout.write(res);
     cur_row++;
   }
 }

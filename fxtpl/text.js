@@ -7,7 +7,16 @@ import { fileURLToPath } from "node:url";
 import { dirname, basename, join } from "node:path";
 import { stdin, stdout } from "node:process";
 
-const env = process.env;
+function dateTimeStr() {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
 
 function setupLogger() {
   const filePath = fileURLToPath(import.meta.url);
@@ -19,13 +28,11 @@ function setupLogger() {
 
   const logStream = createWriteStream(logFilePath, { flags: "a" });
   const logger = new Console({ stdout: logStream, stderr: logStream });
-  return {
-    log: (message) => {
-      const timestamp = new Date().toLocaleString("sv");
-      const msg = `${timestamp} - ${scriptName} - ${message}`;
-      logger.log(msg);
-    },
+  logger.log = function (message, ...optionalParams) {
+    const msg = `${dateTimeStr()} - ${scriptName} - ${message}`;
+    Console.prototype.log.call(this, msg, ...optionalParams);
   };
+  return logger;
 }
 
 const logger = setupLogger();
@@ -44,16 +51,6 @@ async function handleBlock(text) {
 
 // user code ended {{{
 
-function getEnding(content) {
-  const endings = ["\r\n", "\n", "\r"];
-  for (const item of endings) {
-    if (content.endsWith(item)) {
-      return item;
-    }
-  }
-  return "";
-}
-
 async function readAllStdin() {
   return new Promise((resolve) => {
     stdin.setEncoding("utf8");
@@ -70,18 +67,8 @@ async function readAllStdin() {
 
 async function runOnBlockText() {
   const block = await readAllStdin();
-
-  const start_col = Number.parseInt(env.START_COL || 1);
-  const tailLen = Number.parseInt(env.TAIL_LEN || 0);
-  const endingLen = getEnding(block).length;
-
-  const head = block.slice(0, start_col - 1);
-  const target = block.slice(start_col - 1, block.length - tailLen - endingLen);
-  const tail = block.slice(block.length - tailLen - endingLen);
-
-  const res = await handleBlock(target);
-  logger.log(JSON.stringify({ tailLen, head, target, res, tail }));
-  stdout.write([head, res, tail].join(""));
+  const res = await handleBlock(block);
+  stdout.write(res);
 }
 
 try {
