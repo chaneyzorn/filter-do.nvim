@@ -113,6 +113,31 @@ function M:open_scratch_win(ctx)
 
   self:config_scratch_buf()
   self:config_float_win()
+  self:highlight_buf_range(ctx)
+end
+
+function M:highlight_buf_range(ctx)
+  local ns_name = "filter_do.buf_range_hl"
+  local ns_id = vim.api.nvim_create_namespace(ns_name)
+  vim.api.nvim_buf_clear_namespace(ctx.buf_range.bufnr, ns_id, 0, -1)
+  vim.hl.range(
+    ctx.buf_range.bufnr,
+    ns_id,
+    "Visual",
+    { ctx.buf_range.start_row - 1, ctx.buf_range.start_col - 1 },
+    { ctx.buf_range.end_row - 1, ctx.buf_range.end_col - 1 },
+    {
+      regtype = ctx.v_char_wised and "v" or "V",
+      inclusive = true,
+      priority = 1000,
+    }
+  )
+end
+
+function M:clear_buf_range_highlight(ctx)
+  local ns_name = "filter_do.buf_range_hl"
+  local ns_id = vim.api.nvim_create_namespace(ns_name)
+  vim.api.nvim_buf_clear_namespace(ctx.buf_range.bufnr, ns_id, 0, -1)
 end
 
 function M:config_scratch_buf()
@@ -167,26 +192,23 @@ function M:config_scratch_buf()
 end
 
 function M:config_float_win()
+  local callback_fn = function()
+    self:clear_buf_range_highlight(self.ctx)
+    if vim.api.nvim_win_is_valid(self.target_win_id) then
+      vim.api.nvim_win_close(self.target_win_id, true)
+    end
+    if vim.api.nvim_buf_is_valid(self.scratch_buf_id) then
+      vim.api.nvim_buf_delete(self.scratch_buf_id, { force = true })
+    end
+  end
   vim.api.nvim_create_autocmd("WinClosed", {
     pattern = tostring(self.filter_win_id),
-    callback = function()
-      if vim.api.nvim_win_is_valid(self.target_win_id) then
-        vim.api.nvim_win_close(self.target_win_id, true)
-      end
-      if vim.api.nvim_buf_is_valid(self.scratch_buf_id) then
-        vim.api.nvim_buf_delete(self.scratch_buf_id, { force = true })
-      end
-    end,
+    callback = callback_fn,
     once = true,
   })
-
   vim.api.nvim_create_autocmd("WinClosed", {
     pattern = tostring(self.target_win_id),
-    callback = function()
-      if vim.api.nvim_win_is_valid(self.filter_win_id) then
-        vim.api.nvim_win_close(self.filter_win_id, true)
-      end
-    end,
+    callback = callback_fn,
     once = true,
   })
 end
