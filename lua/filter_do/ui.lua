@@ -144,8 +144,13 @@ function M:config_scratch_buf()
   vim.api.nvim_buf_call(self.scratch_buf_id, function()
     vim.cmd.edit()
     vim.cmd.normal("gg0")
-    vim.fn.search("USER_CODE")
-    vim.cmd.normal("0w")
+    local rs = vim.fn.search("USER_CODE")
+    if rs == 0 then
+      -- Placeholder replaced by user code snippet, search next placeholder
+      vim.fn.search("user code ended")
+      vim.cmd.normal("{{}k")
+    end
+    vim.cmd.normal("^")
   end)
 
   vim.api.nvim_buf_set_keymap(self.scratch_buf_id, "n", "<LocalLeader>a", "", {
@@ -169,7 +174,7 @@ function M:config_scratch_buf()
         vim.cmd.edit()
         vim.cmd.normal("gg0")
         vim.fn.search("USER_CODE")
-        vim.cmd.normal("0w")
+        vim.cmd.normal("^")
       end)
     end,
   })
