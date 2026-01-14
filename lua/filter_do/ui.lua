@@ -75,6 +75,14 @@ local function gen_preview_footer()
   }
 end
 
+local function gen_title(title, hi_group)
+  return {
+    { " " },
+    { title, hi_group or "Title" },
+    { " " },
+  }
+end
+
 ---@param ctx filter_do.FxCtx
 function M:open_scratch_win(ctx)
   -- ensure stub file exists
@@ -109,7 +117,7 @@ function M:open_scratch_win(ctx)
     col = math.floor(vim.o.columns * 0.05),
     width = win_width - 1,
     height = win_height,
-    title = string.format(" target: %s ", U.buf_short_name(ctx.buf_range.bufnr)),
+    title = gen_title(string.format("Target: %s", U.buf_short_name(ctx.buf_range.bufnr))),
     title_pos = "center",
     footer = gen_buf_range_footer(ctx),
     footer_pos = "center",
@@ -123,7 +131,7 @@ function M:open_scratch_win(ctx)
     col = math.floor(vim.o.columns * 0.05) + win_width + 1,
     width = win_width - 1,
     height = win_height,
-    title = string.format(" filter-do: %s ", ctx.tpl_name),
+    title = gen_title(string.format("filter-do: %s", ctx.tpl_name)),
     title_pos = "center",
     footer = gen_scratch_footer(),
     footer_pos = "center",
@@ -243,6 +251,8 @@ function M:config_float_win()
     callback = callback_fn,
     once = true,
   })
+  vim.api.nvim_set_option_value("foldmethod", "marker", { win = self.filter_win_id })
+  vim.api.nvim_set_option_value("foldlevel", 0, { win = self.filter_win_id })
 end
 
 function M:preview_diff()
@@ -261,7 +271,9 @@ function M:preview_diff()
 
   vim.api.nvim_win_set_buf(self.filter_win_id, preview_buf)
   vim.api.nvim_win_set_config(self.filter_win_id, {
-    title = string.format(" filter-do: %s [Preview] %s ", self.ctx.tpl_name, U.buf_short_name(self.ctx.buf_range.bufnr)),
+    title = gen_title(
+      string.format("Preview: %s (filter-do: %s)", U.buf_short_name(self.ctx.buf_range.bufnr), self.ctx.tpl_name)
+    ),
     footer = gen_preview_footer(),
   })
   self:config_preview_buf()
@@ -289,9 +301,11 @@ function M:config_preview_buf()
     self.preview_buf_id = nil
 
     vim.api.nvim_win_set_config(self.filter_win_id, {
-      title = string.format(" filter-do: %s ", self.ctx.tpl_name),
+      title = gen_title(string.format("filter-do: %s", self.ctx.tpl_name)),
       footer = gen_scratch_footer(),
     })
+    vim.api.nvim_set_option_value("foldmethod", "marker", { win = self.filter_win_id })
+    vim.api.nvim_set_option_value("foldlevel", 0, { win = self.filter_win_id })
   end
 
   vim.api.nvim_buf_set_keymap(self.preview_buf_id, "n", "<LocalLeader>a", "", {
