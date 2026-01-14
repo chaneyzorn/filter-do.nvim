@@ -46,19 +46,33 @@ local function gen_buf_range_footer(ctx)
 end
 
 local function gen_scratch_footer(can_undo)
-  return {
-    { " " },
-    { " <LocalLeader>+ ", "Visual" },
-    { " " },
-    { can_undo and " [U]ndo " or " [A]pply ", "CursorLine" },
-    { " " },
-    { " [P]review ", "CursorLine" },
-    { " " },
-    { " [R]eset ", "CursorLine" },
-    { " " },
-    { " [C]lose ", "CursorLine" },
-    { " " },
-  }
+  if can_undo then
+    return {
+      { " " },
+      { " <LocalLeader>+ ", "Visual" },
+      { " " },
+      { " [U]ndo ", "CursorLine" },
+      { " " },
+      { " [R]eset ", "CursorLine" },
+      { " " },
+      { " [C]lose ", "CursorLine" },
+      { " " },
+    }
+  else
+    return {
+      { " " },
+      { " <LocalLeader>+ ", "Visual" },
+      { " " },
+      { " [A]pply ", "CursorLine" },
+      { " " },
+      { " [P]review ", "CursorLine" },
+      { " " },
+      { " [R]eset ", "CursorLine" },
+      { " " },
+      { " [C]lose ", "CursorLine" },
+      { " " },
+    }
+  end
 end
 
 local function gen_preview_footer()
@@ -123,6 +137,7 @@ function M:open_scratch_win(ctx)
     footer_pos = "center",
   })
   self.target_win_id = target_win_id
+  self.target_buf_init_undo_seq = vim.fn.undotree(ctx.buf_range.bufnr).seq_cur
   self.target_buf_undo_seq = nil
 
   local filter_win_id = vim.api.nvim_open_win(scratch_buf_id, true, {
@@ -168,6 +183,38 @@ function M:clear_buf_range_highlight(ctx)
   vim.api.nvim_buf_clear_namespace(ctx.buf_range.bufnr, ns_id, 0, -1)
 end
 
+function M:action_apply()
+  if self.target_buf_undo_seq ~= nil then
+    U.msg_warn("filter-do.nvim: Undo previous apply before applying again")
+    return
+  end
+
+  -- check if target buffer has been modified
+  local seq_cur = vim.fn.undotree(self.ctx.buf_range.bufnr).seq_cur
+  if seq_cur ~= self.target_buf_init_undo_seq then
+    U.msg_warn("filter-do.nvim: Target buffer has been modified, cannot apply filter")
+    return
+  end
+
+  vim.api.nvim_buf_call(self.scratch_buf_id, function()
+    vim.cmd.update()
+  end)
+
+  self.target_buf_undo_seq = seq_cur
+  self.filter:exec_filter(self.ctx, self.stub_path)
+  vim.api.nvim_win_set_config(self.filter_win_id, {
+    footer = gen_scratch_footer(self.target_buf_undo_seq),
+  })
+  self:clear_buf_range_highlight(self.ctx)
+end
+
+function M:action_close()
+  vim.api.nvim_buf_call(self.scratch_buf_id, function()
+    vim.cmd.update()
+  end)
+  vim.api.nvim_win_close(self.filter_win_id, true)
+end
+
 function M:config_scratch_buf()
   vim.api.nvim_buf_call(self.scratch_buf_id, function()
     vim.cmd.edit()
@@ -184,18 +231,7 @@ function M:config_scratch_buf()
   vim.api.nvim_buf_set_keymap(self.scratch_buf_id, "n", "<LocalLeader>a", "", {
     desc = "filter-do: Apply filter",
     callback = function()
-      if self.target_buf_undo_seq ~= nil then
-        U.msg_err("filter-do.nvim: Undo previous apply before applying again")
-        return
-      end
-      vim.api.nvim_buf_call(self.scratch_buf_id, function()
-        vim.cmd.update()
-      end)
-      self.target_buf_undo_seq = vim.fn.undotree(self.ctx.buf_range.bufnr).seq_cur
-      self.filter:exec_filter(self.ctx, self.stub_path)
-      vim.api.nvim_win_set_config(self.filter_win_id, {
-        footer = gen_scratch_footer(self.target_buf_undo_seq),
-      })
+      self:action_apply()
     end,
   })
 
@@ -203,17 +239,18 @@ function M:config_scratch_buf()
     desc = "filter-do: Undo last apply",
     callback = function()
       if self.target_buf_undo_seq == nil then
-        U.msg_err("filter-do.nvim: No apply action to undo")
+        U.msg_warn("filter-do.nvim: No apply action to undo")
         return
       end
       local undo_seq = self.target_buf_undo_seq
       self.target_buf_undo_seq = nil
       vim.api.nvim_buf_call(self.ctx.buf_range.bufnr, function()
-        vim.cmd.undo(undo_seq)
+        vim.cmd.undo({ count = undo_seq })
       end)
       vim.api.nvim_win_set_config(self.filter_win_id, {
         footer = gen_scratch_footer(self.target_buf_undo_seq),
       })
+      self:highlight_buf_range(self.ctx)
     end,
   })
 
@@ -241,17 +278,22 @@ function M:config_scratch_buf()
         U.msg_warn("filter-do.nvim: Undo previous apply before previewing diff")
         return
       end
-      self:preview_diff()
+
+      -- check if target buffer has been modified
+      local seq_cur = vim.fn.undotree(self.ctx.buf_range.bufnr).seq_cur
+      if seq_cur ~= self.target_buf_init_undo_seq then
+        U.msg_err("filter-do.nvim: Target buffer has been modified, cannot preview diff")
+        return
+      end
+
+      self:action_preview_diff()
     end,
   })
 
   vim.api.nvim_buf_set_keymap(self.scratch_buf_id, "n", "<LocalLeader>c", "", {
     desc = "filter-do: Close window",
     callback = function()
-      vim.api.nvim_buf_call(self.scratch_buf_id, function()
-        vim.cmd.update()
-      end)
-      vim.api.nvim_win_close(self.filter_win_id, true)
+      self:action_close()
     end,
   })
 end
@@ -286,7 +328,7 @@ function M:config_float_win()
   vim.api.nvim_set_option_value("foldlevel", 0, { win = self.filter_win_id })
 end
 
-function M:preview_diff()
+function M:action_preview_diff()
   vim.api.nvim_buf_call(self.scratch_buf_id, function()
     vim.cmd.update()
   end)
@@ -343,14 +385,7 @@ function M:config_preview_buf()
     desc = "filter-do: Apply filter",
     callback = function()
       back_fn()
-      vim.api.nvim_buf_call(self.scratch_buf_id, function()
-        vim.cmd.update()
-      end)
-      self.target_buf_undo_seq = vim.fn.undotree(self.ctx.buf_range.bufnr).seq_cur
-      self.filter:exec_filter(self.ctx, self.stub_path)
-      vim.api.nvim_win_set_config(self.filter_win_id, {
-        footer = gen_scratch_footer(self.target_buf_undo_seq),
-      })
+      self:action_apply()
     end,
   })
 
@@ -363,10 +398,7 @@ function M:config_preview_buf()
     desc = "filter-do: Close window",
     callback = function()
       back_fn()
-      vim.api.nvim_buf_call(self.scratch_buf_id, function()
-        vim.cmd.update()
-      end)
-      vim.api.nvim_win_close(self.filter_win_id, true)
+      self:action_close()
     end,
   })
 end
