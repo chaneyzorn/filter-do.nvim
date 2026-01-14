@@ -45,16 +45,16 @@ local function gen_buf_range_footer(ctx)
   }
 end
 
-local function gen_scratch_footer()
+local function gen_scratch_footer(can_undo)
   return {
     { " " },
     { " <LocalLeader>+ ", "Visual" },
     { " " },
-    { " [A]pply ", "CursorLine" },
-    { " " },
-    { " [R]eset ", "CursorLine" },
+    { can_undo and " [U]ndo " or " [A]pply ", "CursorLine" },
     { " " },
     { " [P]review ", "CursorLine" },
+    { " " },
+    { " [R]eset ", "CursorLine" },
     { " " },
     { " [C]lose ", "CursorLine" },
     { " " },
@@ -123,6 +123,7 @@ function M:open_scratch_win(ctx)
     footer_pos = "center",
   })
   self.target_win_id = target_win_id
+  self.target_buf_undo_seq = nil
 
   local filter_win_id = vim.api.nvim_open_win(scratch_buf_id, true, {
     relative = "editor",
@@ -133,7 +134,7 @@ function M:open_scratch_win(ctx)
     height = win_height,
     title = gen_title(string.format("filter-do: %s", ctx.tpl_name)),
     title_pos = "center",
-    footer = gen_scratch_footer(),
+    footer = gen_scratch_footer(self.target_buf_undo_seq),
     footer_pos = "center",
   })
   self.filter_win_id = filter_win_id
@@ -183,10 +184,36 @@ function M:config_scratch_buf()
   vim.api.nvim_buf_set_keymap(self.scratch_buf_id, "n", "<LocalLeader>a", "", {
     desc = "filter-do: Apply filter",
     callback = function()
+      if self.target_buf_undo_seq ~= nil then
+        U.msg_err("filter-do.nvim: Undo previous apply before applying again")
+        return
+      end
       vim.api.nvim_buf_call(self.scratch_buf_id, function()
         vim.cmd.update()
       end)
+      self.target_buf_undo_seq = vim.fn.undotree(self.ctx.buf_range.bufnr).seq_cur
       self.filter:exec_filter(self.ctx, self.stub_path)
+      vim.api.nvim_win_set_config(self.filter_win_id, {
+        footer = gen_scratch_footer(self.target_buf_undo_seq),
+      })
+    end,
+  })
+
+  vim.api.nvim_buf_set_keymap(self.scratch_buf_id, "n", "<LocalLeader>u", "", {
+    desc = "filter-do: Undo last apply",
+    callback = function()
+      if self.target_buf_undo_seq == nil then
+        U.msg_err("filter-do.nvim: No apply action to undo")
+        return
+      end
+      local undo_seq = self.target_buf_undo_seq
+      self.target_buf_undo_seq = nil
+      vim.api.nvim_buf_call(self.ctx.buf_range.bufnr, function()
+        vim.cmd.undo(undo_seq)
+      end)
+      vim.api.nvim_win_set_config(self.filter_win_id, {
+        footer = gen_scratch_footer(self.target_buf_undo_seq),
+      })
     end,
   })
 
@@ -210,6 +237,10 @@ function M:config_scratch_buf()
   vim.api.nvim_buf_set_keymap(self.scratch_buf_id, "n", "<LocalLeader>p", "", {
     desc = "filter-do: Preview diff",
     callback = function()
+      if self.target_buf_undo_seq ~= nil then
+        U.msg_warn("filter-do.nvim: Undo previous apply before previewing diff")
+        return
+      end
       self:preview_diff()
     end,
   })
@@ -302,7 +333,7 @@ function M:config_preview_buf()
 
     vim.api.nvim_win_set_config(self.filter_win_id, {
       title = gen_title(string.format("filter-do: %s", self.ctx.tpl_name)),
-      footer = gen_scratch_footer(),
+      footer = gen_scratch_footer(self.target_buf_undo_seq),
     })
     vim.api.nvim_set_option_value("foldmethod", "marker", { win = self.filter_win_id })
     vim.api.nvim_set_option_value("foldlevel", 0, { win = self.filter_win_id })
@@ -315,7 +346,11 @@ function M:config_preview_buf()
       vim.api.nvim_buf_call(self.scratch_buf_id, function()
         vim.cmd.update()
       end)
+      self.target_buf_undo_seq = vim.fn.undotree(self.ctx.buf_range.bufnr).seq_cur
       self.filter:exec_filter(self.ctx, self.stub_path)
+      vim.api.nvim_win_set_config(self.filter_win_id, {
+        footer = gen_scratch_footer(self.target_buf_undo_seq),
+      })
     end,
   })
 
