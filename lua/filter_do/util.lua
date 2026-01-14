@@ -28,4 +28,11 @@ function U.env_kv_str(env)
   return table.concat(res, " ")
 end
 
+---@param bufnr number
+---@return string
+function U.buf_short_name(bufnr)
+  local full_name = vim.api.nvim_buf_get_name(bufnr)
+  return vim.fn.fnamemodify(full_name, ":~:.")
+end
+
 return U

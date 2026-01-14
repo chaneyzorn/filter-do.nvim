@@ -45,6 +45,36 @@ local function gen_buf_range_footer(ctx)
   }
 end
 
+local function gen_scratch_footer()
+  return {
+    { " " },
+    { " <LocalLeader>+ ", "Visual" },
+    { " " },
+    { " [A]pply ", "CursorLine" },
+    { " " },
+    { " [R]eset ", "CursorLine" },
+    { " " },
+    { " [P]review ", "CursorLine" },
+    { " " },
+    { " [C]lose ", "CursorLine" },
+    { " " },
+  }
+end
+
+local function gen_preview_footer()
+  return {
+    { " " },
+    { " <LocalLeader>+ ", "Visual" },
+    { " " },
+    { " [A]pply ", "CursorLine" },
+    { " " },
+    { " [B]ack ", "CursorLine" },
+    { " " },
+    { " [C]lose ", "CursorLine" },
+    { " " },
+  }
+end
+
 ---@param ctx filter_do.FxCtx
 function M:open_scratch_win(ctx)
   -- ensure stub file exists
@@ -67,6 +97,7 @@ function M:open_scratch_win(ctx)
   local scratch_buf_id = vim.api.nvim_create_buf(false, false)
   vim.api.nvim_buf_set_name(scratch_buf_id, stub_path)
   self.scratch_buf_id = scratch_buf_id
+  self.preview_buf_id = nil
 
   -- create windows
   local win_height = math.floor(vim.o.lines * 0.8)
@@ -78,7 +109,7 @@ function M:open_scratch_win(ctx)
     col = math.floor(vim.o.columns * 0.05),
     width = win_width - 1,
     height = win_height,
-    title = string.format(" target: %s ", vim.fn.fnamemodify(vim.api.nvim_buf_get_name(ctx.buf_range.bufnr), ":~:.")),
+    title = string.format(" target: %s ", U.buf_short_name(ctx.buf_range.bufnr)),
     title_pos = "center",
     footer = gen_buf_range_footer(ctx),
     footer_pos = "center",
@@ -94,19 +125,7 @@ function M:open_scratch_win(ctx)
     height = win_height,
     title = string.format(" filter-do: %s ", ctx.tpl_name),
     title_pos = "center",
-    footer = {
-      { " " },
-      { " <LocalLeader>+ ", "Visual" },
-      { " " },
-      { " [A]pply ", "CursorLine" },
-      { " " },
-      { " [R]eset ", "CursorLine" },
-      { " " },
-      { " [P]review ", "CursorLine" },
-      { " " },
-      { " [C]lose ", "CursorLine" },
-      { " " },
-    },
+    footer = gen_scratch_footer(),
     footer_pos = "center",
   })
   self.filter_win_id = filter_win_id
@@ -162,6 +181,7 @@ function M:config_scratch_buf()
       self.filter:exec_filter(self.ctx, self.stub_path)
     end,
   })
+
   vim.api.nvim_buf_set_keymap(self.scratch_buf_id, "n", "<LocalLeader>r", "", {
     desc = "filter-do: Reset scratch",
     callback = function()
@@ -178,13 +198,14 @@ function M:config_scratch_buf()
       end)
     end,
   })
+
   vim.api.nvim_buf_set_keymap(self.scratch_buf_id, "n", "<LocalLeader>p", "", {
     desc = "filter-do: Preview diff",
     callback = function()
-      -- TODO: support preview diff
-      U.msg_warn("call filter-do preview, not implemented yet")
+      self:preview_diff()
     end,
   })
+
   vim.api.nvim_buf_set_keymap(self.scratch_buf_id, "n", "<LocalLeader>c", "", {
     desc = "filter-do: Close window",
     callback = function()
@@ -202,8 +223,14 @@ function M:config_float_win()
     if vim.api.nvim_win_is_valid(self.target_win_id) then
       vim.api.nvim_win_close(self.target_win_id, true)
     end
+    if vim.api.nvim_win_is_valid(self.filter_win_id) then
+      vim.api.nvim_win_close(self.filter_win_id, true)
+    end
     if vim.api.nvim_buf_is_valid(self.scratch_buf_id) then
       vim.api.nvim_buf_delete(self.scratch_buf_id, { force = true })
+    end
+    if self.preview_buf_id and vim.api.nvim_buf_is_valid(self.preview_buf_id) then
+      vim.api.nvim_buf_delete(self.preview_buf_id, { force = true })
     end
   end
   vim.api.nvim_create_autocmd("WinClosed", {
@@ -215,6 +242,83 @@ function M:config_float_win()
     pattern = tostring(self.target_win_id),
     callback = callback_fn,
     once = true,
+  })
+end
+
+function M:preview_diff()
+  vim.api.nvim_buf_call(self.scratch_buf_id, function()
+    vim.cmd.update()
+  end)
+
+  local lines = vim.api.nvim_buf_get_lines(self.ctx.buf_range.bufnr, 0, -1, false)
+  local preview_buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_lines(preview_buf, 0, -1, false, lines)
+  self.preview_buf_id = preview_buf
+
+  local preview_ctx = vim.deepcopy(self.ctx)
+  preview_ctx.buf_range.bufnr = preview_buf
+  self.filter:exec_filter(preview_ctx, self.stub_path)
+
+  vim.api.nvim_win_set_buf(self.filter_win_id, preview_buf)
+  vim.api.nvim_win_set_config(self.filter_win_id, {
+    title = string.format(" filter-do: %s [Preview] %s ", self.ctx.tpl_name, U.buf_short_name(self.ctx.buf_range.bufnr)),
+    footer = gen_preview_footer(),
+  })
+  self:config_preview_buf()
+  self:clear_buf_range_highlight(self.ctx)
+
+  -- clear all diff related options in all wins in the current tabpage
+  vim.cmd.diffoff({ bang = true })
+  -- set diff in target and preview wins
+  vim.api.nvim_win_call(self.target_win_id, function()
+    vim.cmd.diffthis()
+  end)
+  vim.api.nvim_win_call(self.filter_win_id, function()
+    vim.cmd.diffthis()
+  end)
+end
+
+function M:config_preview_buf()
+  local back_fn = function()
+    -- clear all diff related options in all wins in the current tabpage
+    vim.cmd.diffoff({ bang = true })
+    self:highlight_buf_range(self.ctx)
+
+    vim.api.nvim_win_set_buf(self.filter_win_id, self.scratch_buf_id)
+    vim.api.nvim_buf_delete(self.preview_buf_id, { force = true })
+    self.preview_buf_id = nil
+
+    vim.api.nvim_win_set_config(self.filter_win_id, {
+      title = string.format(" filter-do: %s ", self.ctx.tpl_name),
+      footer = gen_scratch_footer(),
+    })
+  end
+
+  vim.api.nvim_buf_set_keymap(self.preview_buf_id, "n", "<LocalLeader>a", "", {
+    desc = "filter-do: Apply filter",
+    callback = function()
+      back_fn()
+      vim.api.nvim_buf_call(self.scratch_buf_id, function()
+        vim.cmd.update()
+      end)
+      self.filter:exec_filter(self.ctx, self.stub_path)
+    end,
+  })
+
+  vim.api.nvim_buf_set_keymap(self.preview_buf_id, "n", "<LocalLeader>b", "", {
+    desc = "filter-do: Back to scratch",
+    callback = back_fn,
+  })
+
+  vim.api.nvim_buf_set_keymap(self.preview_buf_id, "n", "<LocalLeader>c", "", {
+    desc = "filter-do: Close window",
+    callback = function()
+      back_fn()
+      vim.api.nvim_buf_call(self.scratch_buf_id, function()
+        vim.cmd.update()
+      end)
+      vim.api.nvim_win_close(self.filter_win_id, true)
+    end,
   })
 end
 
