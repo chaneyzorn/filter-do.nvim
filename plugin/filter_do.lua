@@ -5,7 +5,6 @@ local fx_cmd_t = {
 
 for cmd_name, desc in pairs(fx_cmd_t) do
   vim.api.nvim_create_user_command(cmd_name, function(cmd)
-    -- print(vim.inspect(cmd))
     require("filter_do.cmd").dispatch_cmd(cmd)
   end, {
     desc = desc,
