@@ -52,9 +52,7 @@ function F:stub_path()
     return nil
   end
 
-  -- TODO: use a better place to store stub files
-  local tmp_path = vim.fs.dirname(vim.fn.tempname())
-  return vim.fs.joinpath(tmp_path, string.format("fx_stub.%s", self.tpl_name))
+  return vim.fs.joinpath(U.ensure_cache_path(), string.format("fx_stub.%s", self.tpl_name))
 end
 
 ---@return string|nil
