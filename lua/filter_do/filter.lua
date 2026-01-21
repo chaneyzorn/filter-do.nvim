@@ -241,9 +241,18 @@ end
 ---@return table<string, filter_do.filter.Filter>
 function F.list_filters()
   local res = {}
-  -- TODO: make sure the built-in templates are listed at first
+  local user_tpl_list = {}
   local tpl_list = vim.api.nvim_get_runtime_file("fxtpl/*", true)
   for _, path in pairs(tpl_list) do
+    -- make sure user templates override built-in ones
+    if path:find("filter_do.nvim/fxtpl") then
+      local filter = F.new(path)
+      res[filter.tpl_name] = filter
+    else
+      table.insert(user_tpl_list, path)
+    end
+  end
+  for _, path in pairs(user_tpl_list) do
     local filter = F.new(path)
     res[filter.tpl_name] = filter
   end
