@@ -52,6 +52,7 @@ function F:stub_path()
     return nil
   end
 
+  -- TODO: use a better place to store stub files
   local tmp_path = vim.fs.dirname(vim.fn.tempname())
   return vim.fs.joinpath(tmp_path, string.format("fx_stub.%s", self.tpl_name))
 end
@@ -185,7 +186,12 @@ function F:exec_filter(ctx, src_path)
     return
   end
 
-  local tpl_ctx = self.executor.pre_action({ src_path = src_path, user_data = {} })
+  local tpl_ctx = self.executor.pre_action({
+    src_path = src_path,
+    fx_ctx = vim.deepcopy(ctx),
+    env = vim.deepcopy(ctx.env),
+    user_data = {},
+  })
   if not tpl_ctx then
     local err_msg = string.format("filter_do.nvim: pre_action failed for filter %s", self.tpl_name)
     U.msg_err(err_msg)
@@ -204,7 +210,7 @@ function F:exec_filter(ctx, src_path)
     local res_code = vim.api.nvim_buf_call(new_buf, function()
       vim.api.nvim_cmd({
         cmd = "!",
-        args = { U.env_kv_str(ctx.env), unpack(filter_cmd) },
+        args = { U.env_kv_str(tpl_ctx.env), unpack(filter_cmd) },
         range = { 1, vim.api.nvim_buf_line_count(new_buf) },
       }, {})
       local res_code = vim.v.shell_error
@@ -223,7 +229,7 @@ function F:exec_filter(ctx, src_path)
   return vim.api.nvim_buf_call(ctx.buf_range.bufnr, function()
     vim.api.nvim_cmd({
       cmd = "!",
-      args = { U.env_kv_str(ctx.env), unpack(filter_cmd) },
+      args = { U.env_kv_str(tpl_ctx.env), unpack(filter_cmd) },
       range = { ctx.buf_range.start_row, ctx.buf_range.end_row },
     }, {})
     local res_code = vim.v.shell_error
@@ -237,6 +243,7 @@ end
 ---@return table<string, filter_do.filter.Filter>
 function F.list_filters()
   local res = {}
+  -- TODO: make sure the built-in templates are listed at first
   local tpl_list = vim.api.nvim_get_runtime_file("fxtpl/*", true)
   for _, path in pairs(tpl_list) do
     local filter = F.new(path)

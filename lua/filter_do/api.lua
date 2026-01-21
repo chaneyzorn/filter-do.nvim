@@ -16,6 +16,8 @@ function M.filter_do(ctx)
   return filter:exec_filter(ctx)
 end
 
+-- TODO: api for user call
+
 function M.fx_view_log()
   local tmp_path = vim.fs.dirname(vim.fn.tempname())
   local log_path = vim.fs.joinpath(tmp_path, "filter_do.log")

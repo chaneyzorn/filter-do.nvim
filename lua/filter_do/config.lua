@@ -1,20 +1,22 @@
 ---@module 'filter_do.config'
 
--- TODO: support config something
+---@type filter_do.UserConfig
+local defaults = {
+  executors = {},
+  tpl_exec = {},
+}
 
-vim.g.loaded_filter_do = false
+local config = vim.deepcopy(defaults)
 
 local M = {}
 
-function M.ensure_init()
-  if vim.g.loaded_filter_do then
-    return
-  end
-  vim.g.loaded_filter_do = true
-end
-
+---@param user_config filter_do.UserConfig
 function M.setup(user_config)
-  return user_config
+  vim.tbl_deep_extend("force", config, user_config or {})
+
+  local E = require("filter_do.executors")
+  E.setup_executors(config.executors or {})
+  E.setup_tpl_exec(config.tpl_exec or {})
 end
 
 return M

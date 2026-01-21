@@ -1,10 +1,4 @@
----@class filter_do.executors.TplCtx
----@field src_path string
----@field user_data any
-
----@class filter_do.executors.ExecutorInfo
----@field pre_action fun(ctx:filter_do.executors.TplCtx):filter_do.executors.TplCtx|nil
----@field filter_cmd fun(ctx:filter_do.executors.TplCtx):string[]|nil
+---@module "filter_do.executors"
 
 ---@type table<string, filter_do.executors.ExecutorInfo>
 local executors = {
@@ -14,7 +8,7 @@ local executors = {
 }
 
 ---@type table<string, filter_do.executors.ExecutorInfo>
-local tpl_executor_table = {
+local tpl_exec = {
   ["line.py"] = executors.python,
   ["text.py"] = executors.python,
   ["line.js"] = executors.nodejs,
@@ -23,10 +17,31 @@ local tpl_executor_table = {
 
 local E = {}
 
+---@param custom_executors table<string, filter_do.executors.ExecutorInfo>
+function E.setup_executors(custom_executors)
+  for name, executor in pairs(custom_executors) do
+    executors[name] = executor
+  end
+end
+
+---@param custom_tpl_exec table<string, filter_do.executors.ExecutorInfo|string>
+function E.setup_tpl_exec(custom_tpl_exec)
+  for tpl_name, executor in pairs(custom_tpl_exec) do
+    if type(executor) == "string" then
+      executor = executors[executor]
+      if not executor then
+        local err_msg = string.format("filter_do.nvim: executor %s not found for tpl %s", executor, tpl_name)
+        vim.notify(err_msg, vim.log.levels.ERROR)
+      end
+    end
+    tpl_exec[tpl_name] = executor
+  end
+end
+
 ---@param tpl_name string
 ---@return filter_do.executors.ExecutorInfo
 function E.get_executor(tpl_name)
-  return tpl_executor_table[tpl_name] or executors.shebang
+  return tpl_exec[tpl_name] or executors.shebang
 end
 
 return E
