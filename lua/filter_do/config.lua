@@ -2,6 +2,7 @@
 
 ---@type filter_do.UserConfig
 local defaults = {
+  filter_draft_limit = 10,
   executors = {},
   tpl_exec = {},
 }
@@ -17,6 +18,14 @@ function M.setup(user_config)
   local E = require("filter_do.executors")
   E.setup_executors(config.executors or {})
   E.setup_tpl_exec(config.tpl_exec or {})
+
+  vim.api.nvim_create_autocmd("VimLeavePre", {
+    group = vim.api.nvim_create_augroup("filter_do.cleanup", { clear = true }),
+    callback = function()
+      local keep_num = config.filter_draft_limit
+      require("filter_do.filter").clean_all_stubs(keep_num)
+    end,
+  })
 end
 
 return M

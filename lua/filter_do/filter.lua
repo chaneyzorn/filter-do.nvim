@@ -57,6 +57,20 @@ function F:list_all_stubs()
   return vim.fn.glob(self:_stub_path("*"), false, true)
 end
 
+function F:clean_stubs(keep_num)
+  local stub_paths = self:list_all_stubs()
+  if #stub_paths <= keep_num then
+    return
+  end
+  -- sort by filename ascendingly to remove old stubs first
+  table.sort(stub_paths, function(a, b)
+    return a < b
+  end)
+  for i = 1, #stub_paths - keep_num do
+    os.remove(stub_paths[i])
+  end
+end
+
 ---@return string|nil
 function F:_get_last_stub()
   local stub_paths = self:list_all_stubs()
@@ -262,6 +276,14 @@ end
 function F.get_filter_by_name(tpl_name)
   local filters = F.list_filters()
   return filters[tpl_name]
+end
+
+---@param keep_num integer
+function F.clean_all_stubs(keep_num)
+  local filters = F.list_filters()
+  for _, filter in pairs(filters) do
+    filter:clean_stubs(keep_num)
+  end
 end
 
 return F
