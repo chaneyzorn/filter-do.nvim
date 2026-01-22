@@ -121,6 +121,9 @@ function M:open_scratch_win(ctx)
   self.scratch_buf_id = scratch_buf_id
   self.preview_buf_id = nil
 
+  -- record current window before creating floating windows
+  self.prev_win_id = vim.api.nvim_get_current_win()
+
   -- create windows
   local win_height = math.floor(vim.o.lines * 0.8)
   local win_width = math.floor((vim.o.columns * 0.9) * 0.5)
@@ -312,6 +315,10 @@ function M:config_float_win()
     end
     if self.preview_buf_id and vim.api.nvim_buf_is_valid(self.preview_buf_id) then
       vim.api.nvim_buf_delete(self.preview_buf_id, { force = true })
+    end
+    -- restore previous window
+    if vim.api.nvim_win_is_valid(self.prev_win_id) then
+      vim.api.nvim_set_current_win(self.prev_win_id)
     end
   end
   vim.api.nvim_create_autocmd("WinClosed", {
