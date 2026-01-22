@@ -5,7 +5,7 @@ local fx_cmd_t = {
 
 for cmd_name, desc in pairs(fx_cmd_t) do
   vim.api.nvim_create_user_command(cmd_name, function(cmd)
-    require("filter_do.cmd").dispatch_cmd(cmd)
+    require("filter_do.cmd").fx_cmd(cmd)
   end, {
     desc = desc,
     -- :h command-attributes
@@ -44,5 +44,5 @@ for cmd_name, desc in pairs(fx_cmd_t) do
 end
 
 vim.api.nvim_create_user_command("FxLog", function()
-  require("filter_do.api").fx_view_log()
+  require("filter_do.cmd").fx_log_cmd()
 end, { desc = "View filter_do.nvim log" })

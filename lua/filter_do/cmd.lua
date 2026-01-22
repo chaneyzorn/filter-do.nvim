@@ -1,8 +1,7 @@
 ---@module "filter_do.cmd"
 
-local U = require("filter_do.util")
-
 ---@param user_cmd vim.api.keyset.create_user_command.command_args
+---@return filter_do.FxCtx
 local function parse_fx_cmd_ctx(user_cmd)
   local bufnr = vim.api.nvim_get_current_buf()
   local sub_cmd = user_cmd.fargs[1]
@@ -19,7 +18,6 @@ local function parse_fx_cmd_ctx(user_cmd)
     end_row = user_cmd.line2,
     start_col = 1,
     end_col = vim.v.maxcol,
-    tail_len = -1,
   }
   if user_cmd.range == 0 then
     -- default range is whole buffer
@@ -29,7 +27,6 @@ local function parse_fx_cmd_ctx(user_cmd)
       end_row = vim.api.nvim_buf_line_count(bufnr),
       start_col = 1,
       end_col = vim.v.maxcol,
-      tail_len = -1,
     }
   end
   if v_char_wised then
@@ -50,7 +47,6 @@ local function parse_fx_cmd_ctx(user_cmd)
   local env = {
     START_ROW = string.format("%s", buf_range.start_row),
     END_ROW = string.format("%s", buf_range.end_row),
-    EX_CMD = user_cmd.name,
   }
 
   ---@type filter_do.FxCtx
@@ -67,30 +63,16 @@ local function parse_fx_cmd_ctx(user_cmd)
   return ctx
 end
 
----@param user_cmd vim.api.keyset.create_user_command.command_args
-local function fx_fn(user_cmd)
-  local ctx = parse_fx_cmd_ctx(user_cmd)
-  if ctx.edit_scratch then
-    local ui = require("filter_do.ui").new()
-    ui:open_scratch_win(ctx)
-  else
-    return require("filter_do.api").filter_do(ctx)
-  end
-end
-
 local M = {}
 
 ---@param user_cmd vim.api.keyset.create_user_command.command_args
-function M.dispatch_cmd(user_cmd)
-  local Fn = {
-    fx = fx_fn,
-    fxv = fx_fn,
-  }
-  local fn = Fn[string.lower(user_cmd.name)]
-  if not fn then
-    U.msg_err(string.format("filter_do.nvim: unknown cmd %s", user_cmd.name))
-  end
-  return fn(user_cmd)
+function M.fx_cmd(user_cmd)
+  local ctx = parse_fx_cmd_ctx(user_cmd)
+  return require("filter_do.api").filter_do(ctx)
+end
+
+function M.fx_log_cmd()
+  require("filter_do.api").fx_view_log()
 end
 
 return M

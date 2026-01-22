@@ -5,8 +5,15 @@ local U = require("filter_do.util")
 
 local M = {}
 
+--- the core api to do filter execution
 ---@param ctx filter_do.FxCtx
 function M.filter_do(ctx)
+  if ctx.edit_scratch then
+    local ui = require("filter_do.ui").new()
+    ui:open_scratch_win(ctx)
+    return
+  end
+
   local filter = F.get_filter_by_name(ctx.tpl_name)
   if not filter then
     local err_msg = string.format("filter_do.nvim: filter not found for %s", ctx.tpl_name)
@@ -15,8 +22,6 @@ function M.filter_do(ctx)
   end
   return filter:exec_filter(ctx)
 end
-
--- TODO: api for user call
 
 function M.fx_view_log()
   local tmp_path = vim.fs.dirname(vim.fn.tempname())
