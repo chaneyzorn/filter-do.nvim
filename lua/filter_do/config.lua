@@ -12,7 +12,7 @@ local M = {}
 
 ---@param user_config filter_do.UserConfig
 function M.setup(user_config)
-  vim.tbl_deep_extend("force", config, user_config or {})
+  config = vim.tbl_deep_extend("force", config, user_config or {})
 
   local E = require("filter_do.executors")
   E.setup_executors(config.executors or {})
