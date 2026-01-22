@@ -23,9 +23,8 @@ function M.filter_do(ctx)
   return filter:exec_filter(ctx)
 end
 
-function M.fx_view_log()
-  local tmp_path = vim.fs.dirname(vim.fn.tempname())
-  local log_path = vim.fs.joinpath(tmp_path, "filter_do.log")
+function M.view_log()
+  local log_path = U.get_log_path()
   if not vim.uv.fs_stat(log_path) then
     U.msg_info("filter_do.nvim: log is empty")
     return

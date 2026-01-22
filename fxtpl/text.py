@@ -10,7 +10,7 @@ def setup_logger():
     script_name = os.path.basename(__file__)
     script_dir = os.path.dirname(os.path.abspath(__file__))
     log_file_name = "filter_do.log"
-    log_file_path = os.path.join(script_dir, log_file_name)
+    log_file_path = os.getenv("FX_LOG", os.path.join(script_dir, log_file_name))
 
     formatter = logging.Formatter(f"%(asctime)s - {script_name} - %(message)s")
     file_handler = logging.FileHandler(log_file_path)

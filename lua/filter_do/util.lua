@@ -50,4 +50,11 @@ function U.ensure_cache_path(sub_path)
   return target_path
 end
 
+---@return string
+function U.get_log_path()
+  local tmp_path = vim.fs.dirname(vim.fn.tempname())
+  local log_path = vim.fs.joinpath(tmp_path, "filter_do.log")
+  return log_path
+end
+
 return U

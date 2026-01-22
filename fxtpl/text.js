@@ -24,7 +24,7 @@ function setupLogger() {
   const scriptName = basename(filePath);
 
   const logFileName = "filter_do.log";
-  const logFilePath = join(dirPath, logFileName);
+  const logFilePath = process.env.FX_LOG || join(dirPath, logFileName);
 
   const logStream = createWriteStream(logFilePath, { flags: "a" });
   const logger = new Console({ stdout: logStream, stderr: logStream });

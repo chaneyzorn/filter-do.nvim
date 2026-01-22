@@ -1,5 +1,7 @@
 ---@module "filter_do.cmd"
 
+local U = require("filter_do.util")
+
 ---@param user_cmd vim.api.keyset.create_user_command.command_args
 ---@return filter_do.FxCtx
 local function parse_fx_cmd_ctx(user_cmd)
@@ -47,6 +49,7 @@ local function parse_fx_cmd_ctx(user_cmd)
   local env = {
     START_ROW = string.format("%s", buf_range.start_row),
     END_ROW = string.format("%s", buf_range.end_row),
+    FX_LOG = U.get_log_path(),
   }
 
   ---@type filter_do.FxCtx
@@ -72,7 +75,7 @@ function M.fx_cmd(user_cmd)
 end
 
 function M.fx_log_cmd()
-  require("filter_do.api").fx_view_log()
+  require("filter_do.api").view_log()
 end
 
 return M
