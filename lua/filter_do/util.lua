@@ -35,14 +35,19 @@ function U.buf_short_name(bufnr)
   return vim.fn.fnamemodify(full_name, ":~:.")
 end
 
+
+---@param sub_path string|nil
 ---@return string
-function U.ensure_cache_path()
+function U.ensure_cache_path(sub_path)
   local cache_path = vim.fn.stdpath("cache")
-  local filter_do_cache_path = vim.fs.joinpath(cache_path, "filter_do.nvim")
-  if not vim.uv.fs_stat(filter_do_cache_path) then
-    vim.uv.fs_mkdir(filter_do_cache_path, 493) -- 0755
+  local target_path = vim.fs.joinpath(cache_path, "filter_do.nvim")
+  if sub_path then
+    target_path = vim.fs.joinpath(target_path, sub_path)
   end
-  return filter_do_cache_path
+  if not vim.uv.fs_stat(target_path) then
+    vim.fn.mkdir(target_path, "p")
+  end
+  return target_path
 end
 
 return U

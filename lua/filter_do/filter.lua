@@ -26,7 +26,7 @@ function F.new(path)
 end
 
 ---@return filter_do.filter.Tpl|nil
-function F:load_template_file()
+function F:_load_template_file()
   if self._tpl then
     return self._tpl
   end
@@ -45,36 +45,37 @@ function F:load_template_file()
   return self._tpl
 end
 
----@return string|nil
-function F:stub_path()
-  local tpl = self:load_template_file()
-  if not tpl then
-    return nil
-  end
+---@param identify string|integer
+---@return string
+function F:_stub_path(identify)
+  local stub_file_name = string.format("fx_stub.%s.%s", identify, self.tpl_name)
+  return vim.fs.joinpath(U.ensure_cache_path("stubs"), stub_file_name)
+end
 
-  return vim.fs.joinpath(U.ensure_cache_path(), string.format("fx_stub.%s", self.tpl_name))
+---@return string[]
+function F:list_all_stubs()
+  return vim.fn.glob(self:_stub_path("*"), false, true)
 end
 
 ---@return string|nil
-function F:get_exists_stub()
-  local stub_path = self:stub_path()
-  if not stub_path then
+function F:_get_last_stub()
+  local stub_paths = self:list_all_stubs()
+  if #stub_paths == 0 then
     return nil
   end
-
-  local stat = vim.uv.fs_stat(stub_path)
-  if not stat then
-    return nil
-  end
-
-  return stub_path
+  -- sort by filename descendingly to get the last used stub
+  table.sort(stub_paths, function(a, b)
+    return a > b
+  end)
+  return stub_paths[1]
 end
 
 ---@param ctx filter_do.FxCtx|nil
+---@param target_path string|nil write to target path if specified
 ---@return string|nil
-function F:gen_stub_file(ctx)
+function F:gen_stub_file(ctx, target_path)
   if ctx and ctx.use_last_code then
-    local stub_path = self:get_exists_stub()
+    local stub_path = self:_get_last_stub()
     if not stub_path then
       local err_msg = string.format("filter_do.nvim: no previous code found for filter %s", self.tpl_name)
       U.msg_err(err_msg)
@@ -83,16 +84,12 @@ function F:gen_stub_file(ctx)
     return stub_path
   end
 
-  local tpl = self:load_template_file()
+  local tpl = self:_load_template_file()
   if not tpl then
     return nil
   end
 
-  local stub_path = self:stub_path()
-  if not stub_path then
-    return nil
-  end
-
+  local stub_path = target_path or self:_stub_path(os.time())
   local f, err = io.open(stub_path, "w")
   if f == nil then
     local err_msg = string.format("filter_do.nvim: %s", err)
@@ -116,7 +113,7 @@ end
 
 ---@param ctx filter_do.FxCtx
 ---@return integer
-function F:copy_range_to_new_buf(ctx)
+function F:_copy_range_to_new_buf(ctx)
   local lines = {}
   if ctx.v_char_wised then
     lines = vim.api.nvim_buf_get_text(
@@ -144,7 +141,7 @@ end
 ---@param ctx filter_do.FxCtx
 ---@param src_buf integer
 ---@return nil
-function F:set_range_with_buf_text(ctx, src_buf)
+function F:_set_range_with_buf_text(ctx, src_buf)
   local lines = vim.api.nvim_buf_get_lines(src_buf, 0, -1, false)
   if ctx.v_char_wised then
     vim.api.nvim_buf_set_text(
@@ -167,7 +164,8 @@ function F:set_range_with_buf_text(ctx, src_buf)
 end
 
 ---@param ctx filter_do.FxCtx
----@param src_path string|nil
+---@param src_path string|nil not gen stub file if specified
+---@return integer|nil
 function F:exec_filter(ctx, src_path)
   local modifiable = vim.api.nvim_get_option_value("modifiable", { buf = ctx.buf_range.bufnr })
   local readonly = vim.api.nvim_get_option_value("readonly", { buf = ctx.buf_range.bufnr })
@@ -204,7 +202,7 @@ function F:exec_filter(ctx, src_path)
   end
 
   if ctx.v_char_wised then
-    local new_buf = self:copy_range_to_new_buf(ctx)
+    local new_buf = self:_copy_range_to_new_buf(ctx)
     local res_code = vim.api.nvim_buf_call(new_buf, function()
       vim.api.nvim_cmd({
         cmd = "!",
@@ -218,7 +216,7 @@ function F:exec_filter(ctx, src_path)
       return res_code
     end)
     if res_code == 0 then
-      self:set_range_with_buf_text(ctx, new_buf)
+      self:_set_range_with_buf_text(ctx, new_buf)
     end
     vim.api.nvim_buf_delete(new_buf, { force = true })
     return res_code

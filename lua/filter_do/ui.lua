@@ -264,7 +264,8 @@ function M:config_scratch_buf()
       new_ctx.edit_scratch = false
       new_ctx.use_last_code = false
       new_ctx.code_snip = ""
-      self.filter:gen_stub_file(new_ctx)
+      -- reset current stub file contents
+      self.filter:gen_stub_file(new_ctx, self.stub_path)
       vim.api.nvim_buf_call(self.scratch_buf_id, function()
         vim.cmd.edit()
         vim.cmd.normal("gg0")
