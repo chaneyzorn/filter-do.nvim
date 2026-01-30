@@ -51,7 +51,7 @@
 ---@class filter_do.api.FxCtxGetter
 ---@field get_buf_range fun():filter_do.BufRange
 ---@field select_tpl fun():string
----@field get_code_snip fun():string
+---@field get_code_snip_spec fun():filter_do.CodeSnipSpec
 ---@field edit_before_apply fun():boolean
 ---@field get_env fun():filter_do.EnvKv
 ---@field opts filter_do.FxCtxOpts

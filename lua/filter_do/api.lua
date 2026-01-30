@@ -23,6 +23,27 @@ function M.filter_do(ctx)
   return filter:exec_filter(ctx)
 end
 
+---@param ctx_getter filter_do.api.FxCtxGetter
+---@return filter_do.FxCtx
+function M.get_ctx_from_getter(ctx_getter)
+  ---@type filter_do.FxCtx
+  local ctx = {
+    buf_range = ctx_getter.get_buf_range(),
+    tpl_name = ctx_getter.select_tpl(),
+    code_snip_spec = ctx_getter.get_code_snip_spec(),
+    edit_scratch = ctx_getter.edit_before_apply(),
+    env = ctx_getter.get_env(),
+  }
+  ctx = vim.tbl_deep_extend("force", ctx, ctx_getter.opts or {})
+  return ctx
+end
+
+---@param ctx_getter filter_do.api.FxCtxGetter
+function M.filter_do_wrapper(ctx_getter)
+  local ctx = M.get_ctx_from_getter(ctx_getter)
+  return M.filter_do(ctx)
+end
+
 function M.view_log()
   local log_path = U.get_log_path()
   if not vim.uv.fs_stat(log_path) then
