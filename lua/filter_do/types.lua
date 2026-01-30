@@ -11,18 +11,25 @@
 
 ---@class filter_do.BufRange
 ---@field bufnr integer
+---@field v_char_wised boolean
 ---@field start_row integer
 ---@field end_row integer
 ---@field start_col integer
 ---@field end_col integer
 
+---@class filter_do.CodeSnipSpec
+---@field type
+---| "code_snip" # value: string (the code snippet string)
+---| "use_last_code" # value: nil (use the last used code snippet)
+---| "exist_path" # value: string (the path to the code snippet file)
+---| "dynamic_func" # value: fun():string (a function that return filter source file path)
+---@field value nil | string | fun(filter_do.filter.Filter): string
+
 ---@class filter_do.FxCtx
 ---@field buf_range filter_do.BufRange
 ---@field tpl_name string
----@field code_snip string
----@field v_char_wised boolean
+---@field code_snip_spec filter_do.CodeSnipSpec
 ---@field edit_scratch boolean
----@field use_last_code boolean
 ---@field env filter_do.EnvKv
 
 ---@class filter_do.executors.ExecutorCtx
@@ -38,3 +45,13 @@
 ---@class filter_do.UserConfig
 ---@field executors? table<string, filter_do.executors.ExecutorInfo>
 ---@field tpl_exec? table<string, string|filter_do.executors.ExecutorInfo>
+
+---@class (partial) filter_do.FxCtxOpts: filter_do.FxCtx
+
+---@class filter_do.api.FxCtxGetter
+---@field get_buf_range fun():filter_do.BufRange
+---@field select_tpl fun():string
+---@field get_code_snip fun():string
+---@field edit_before_apply fun():boolean
+---@field get_env fun():filter_do.EnvKv
+---@field opts filter_do.FxCtxOpts

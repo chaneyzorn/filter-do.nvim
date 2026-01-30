@@ -3,40 +3,28 @@
 local U = require("filter_do.util")
 
 ---@param user_cmd vim.api.keyset.create_user_command.command_args
----@return filter_do.FxCtx
-local function parse_fx_cmd_ctx(user_cmd)
+---@return filter_do.BufRange
+local function get_buf_range_from_cmd(user_cmd)
   local bufnr = vim.api.nvim_get_current_buf()
-  local sub_cmd = user_cmd.fargs[1]
-  local tpl_name, modifier = string.match(sub_cmd, "^(.-)([+-]*)$")
-  local code_snip = user_cmd.args:sub(#sub_cmd + 2)
-  local edit_scratch = modifier:find("+") ~= nil
-  local use_last_code = modifier:find("-") ~= nil
   local v_char_wised = user_cmd.name == "Fxv" and user_cmd.range == 2
 
   ---@type filter_do.BufRange
   local buf_range = {
     bufnr = bufnr,
+    v_char_wised = v_char_wised,
     start_row = user_cmd.line1,
     end_row = user_cmd.line2,
     start_col = 1,
     end_col = vim.v.maxcol,
   }
-  if user_cmd.range == 0 then
-    -- default range is whole buffer
-    buf_range = {
-      bufnr = bufnr,
-      start_row = 1,
-      end_row = vim.api.nvim_buf_line_count(bufnr),
-      start_col = 1,
-      end_col = vim.v.maxcol,
-    }
-  end
+
   if v_char_wised then
     local _, lnum1, col1 = unpack(vim.fn.getpos("'<"))
     local _, lnum2, col2 = unpack(vim.fn.getpos("'>"))
     if lnum1 == user_cmd.line1 and lnum2 == user_cmd.line2 then
       buf_range = {
         bufnr = bufnr,
+        v_char_wised = v_char_wised,
         start_row = user_cmd.line1,
         end_row = user_cmd.line2,
         start_col = col1,
@@ -44,6 +32,34 @@ local function parse_fx_cmd_ctx(user_cmd)
       }
     end
   end
+
+  return buf_range
+end
+
+---@param user_cmd vim.api.keyset.create_user_command.command_args
+---@return filter_do.CodeSnipSpec
+local function get_code_snip_spec_from_cmd(user_cmd)
+  local sub_cmd = user_cmd.fargs[1]
+  local _, modifier = string.match(sub_cmd, "^(.-)([+-]*)$")
+  local code_snip = user_cmd.args:sub(#sub_cmd + 2)
+  local use_last_code = modifier:find("-") ~= nil
+
+  if use_last_code then
+    return { type = "use_last_code", value = nil }
+  else
+    return { type = "code_snip", value = code_snip }
+  end
+end
+
+---@param user_cmd vim.api.keyset.create_user_command.command_args
+---@return filter_do.FxCtx
+local function parse_fx_cmd_ctx(user_cmd)
+  local sub_cmd = user_cmd.fargs[1]
+  local tpl_name, modifier = string.match(sub_cmd, "^(.-)([+-]*)$")
+  local edit_scratch = modifier:find("+") ~= nil
+
+  local code_snip_spec = get_code_snip_spec_from_cmd(user_cmd)
+  local buf_range = get_buf_range_from_cmd(user_cmd)
 
   ---@type filter_do.EnvKv
   local env = {
@@ -55,14 +71,11 @@ local function parse_fx_cmd_ctx(user_cmd)
   ---@type filter_do.FxCtx
   local ctx = {
     tpl_name = tpl_name,
-    code_snip = code_snip,
-    v_char_wised = v_char_wised,
+    code_snip_spec = code_snip_spec,
     edit_scratch = edit_scratch,
-    use_last_code = use_last_code,
     buf_range = buf_range,
     env = env,
   }
-  -- print(vim.inspect(ctx))
   return ctx
 end
 

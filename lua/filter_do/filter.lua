@@ -84,26 +84,15 @@ function F:_get_last_stub()
   return stub_paths[1]
 end
 
----@param ctx filter_do.FxCtx|nil
----@param target_path string|nil write to target path if specified
+---@param code_snip string|nil
 ---@return string|nil
-function F:gen_stub_file(ctx, target_path)
-  if ctx and ctx.use_last_code then
-    local stub_path = self:_get_last_stub()
-    if not stub_path then
-      local err_msg = string.format("filter_do.nvim: no previous code found for filter %s", self.tpl_name)
-      U.msg_err(err_msg)
-      return nil
-    end
-    return stub_path
-  end
-
+function F:gen_stub_by_code_snip(code_snip)
   local tpl = self:_load_template_file()
   if not tpl then
     return nil
   end
 
-  local stub_path = target_path or self:_stub_path(os.time())
+  local stub_path = self:_stub_path(os.time())
   local f, err = io.open(stub_path, "w")
   if f == nil then
     local err_msg = string.format("filter_do.nvim: %s", err)
@@ -112,10 +101,10 @@ function F:gen_stub_file(ctx, target_path)
   end
 
   local content = tpl.content
-  if ctx and ctx.code_snip and #ctx.code_snip > 0 then
+  if code_snip and #code_snip > 0 then
     local pattern = "(.*\n%s*)(.-USER_CODE)(.*)"
     content = string.gsub(tpl.content, pattern, function(head, _, tail)
-      return head .. ctx.code_snip .. tail
+      return head .. code_snip .. tail
     end)
   end
 
@@ -125,11 +114,89 @@ function F:gen_stub_file(ctx, target_path)
   return stub_path
 end
 
+---@return string|nil
+function F:gen_stub_by_last_used()
+  local last_stub = self:_get_last_stub()
+  if not last_stub then
+    local err_msg = string.format("filter_do.nvim: no previous code found for filter %s", self.tpl_name)
+    U.msg_err(err_msg)
+    return nil
+  end
+
+  -- rename the last used stub to a new one with current timestamp
+  local new_stub_path = self:_stub_path(os.time())
+  local cp_res = vim.system({ "cp", last_stub, new_stub_path }):wait()
+  if cp_res.code ~= 0 then
+    local err_msg = string.format("filter_do.nvim: failed to copy stub file %s to %s", last_stub, new_stub_path)
+    U.msg_err(err_msg)
+    return nil
+  end
+  return new_stub_path
+end
+
+---@param src_path string
+---@return string|nil
+function F:gen_stub_by_exist_file(src_path)
+  if vim.uv.fs_stat(src_path) == nil then
+    local err_msg = string.format("filter_do.nvim: source file %s does not exist", src_path)
+    U.msg_err(err_msg)
+    return nil
+  end
+
+  local new_stub_path = self:_stub_path(os.time())
+  local cp_res = vim.system({ "cp", src_path, new_stub_path }):wait()
+  if cp_res.code ~= 0 then
+    local err_msg = string.format("filter_do.nvim: failed to copy stub file %s to %s", src_path, new_stub_path)
+    U.msg_err(err_msg)
+    return nil
+  end
+  return new_stub_path
+end
+
+---@param func fun(filter_do.filter.Filter):string
+---@return string|nil
+function F:gen_stub_by_dynamic_func(func)
+  local src_path = func(self)
+  if not src_path or #src_path == 0 then
+    local err_msg = string.format("filter_do.nvim: dynamic func returned empty path for filter %s", self.tpl_name)
+    U.msg_err(err_msg)
+    return nil
+  end
+  if vim.uv.fs_stat(src_path) == nil then
+    local err_msg = string.format("filter_do.nvim: source file %s does not exist", src_path)
+    U.msg_err(err_msg)
+    return nil
+  end
+  return src_path
+end
+
+---@param code_snip_spec filter_do.CodeSnipSpec
+---@return string|nil
+function F:gen_stub_by_spec(code_snip_spec)
+  local value = code_snip_spec.value
+  if code_snip_spec.type == "code_snip" then
+    ---@cast value string
+    return self:gen_stub_by_code_snip(value)
+  elseif code_snip_spec.type == "use_last_code" then
+    return self:gen_stub_by_last_used()
+  elseif code_snip_spec.type == "exist_path" then
+    ---@cast value string
+    return self:gen_stub_by_exist_file(value)
+  elseif code_snip_spec.type == "dynamic_func" then
+    ---@cast value fun(filter_do.filter.Filter):string
+    return self:gen_stub_by_dynamic_func(value)
+  else
+    local err_msg = string.format("filter_do.nvim: unknown code snip spec type %s", code_snip_spec.type)
+    U.msg_err(err_msg)
+    return nil
+  end
+end
+
 ---@param ctx filter_do.FxCtx
 ---@return integer
 function F:_copy_range_to_new_buf(ctx)
   local lines = {}
-  if ctx.v_char_wised then
+  if ctx.buf_range.v_char_wised then
     lines = vim.api.nvim_buf_get_text(
       ctx.buf_range.bufnr,
       ctx.buf_range.start_row - 1,
@@ -157,7 +224,7 @@ end
 ---@return nil
 function F:_set_range_with_buf_text(ctx, src_buf)
   local lines = vim.api.nvim_buf_get_lines(src_buf, 0, -1, false)
-  if ctx.v_char_wised then
+  if ctx.buf_range.v_char_wised then
     vim.api.nvim_buf_set_text(
       ctx.buf_range.bufnr,
       ctx.buf_range.start_row - 1,
@@ -190,37 +257,37 @@ function F:exec_filter(ctx, src_path)
   end
 
   if src_path == nil then
-    src_path = self:gen_stub_file(ctx)
+    src_path = self:gen_stub_by_spec(ctx.code_snip_spec)
   end
   if not src_path then
     return
   end
 
-  local tpl_ctx = self.executor.pre_action({
+  local executor_ctx = self.executor.pre_action({
     src_path = src_path,
     fx_ctx = vim.deepcopy(ctx),
     env = vim.deepcopy(ctx.env),
     user_data = {},
   })
-  if not tpl_ctx then
+  if not executor_ctx then
     local err_msg = string.format("filter_do.nvim: pre_action failed for filter %s", self.tpl_name)
     U.msg_err(err_msg)
     return
   end
 
-  local filter_cmd = self.executor.filter_cmd(tpl_ctx)
+  local filter_cmd = self.executor.filter_cmd(executor_ctx)
   if not filter_cmd or #filter_cmd == 0 then
     local err_msg = string.format("filter_do.nvim: failed to gen cmd for filter %s", self.tpl_name)
     U.msg_err(err_msg)
     return
   end
 
-  if ctx.v_char_wised then
+  if ctx.buf_range.v_char_wised then
     local new_buf = self:_copy_range_to_new_buf(ctx)
     local res_code = vim.api.nvim_buf_call(new_buf, function()
       vim.api.nvim_cmd({
         cmd = "!",
-        args = { U.env_kv_str(tpl_ctx.env), unpack(filter_cmd) },
+        args = { U.env_kv_str(executor_ctx.env), unpack(filter_cmd) },
         range = { 1, vim.api.nvim_buf_line_count(new_buf) },
       }, {})
       local res_code = vim.v.shell_error
@@ -239,7 +306,7 @@ function F:exec_filter(ctx, src_path)
   return vim.api.nvim_buf_call(ctx.buf_range.bufnr, function()
     vim.api.nvim_cmd({
       cmd = "!",
-      args = { U.env_kv_str(tpl_ctx.env), unpack(filter_cmd) },
+      args = { U.env_kv_str(executor_ctx.env), unpack(filter_cmd) },
       range = { ctx.buf_range.start_row, ctx.buf_range.end_row },
     }, {})
     local res_code = vim.v.shell_error

@@ -11,11 +11,12 @@ function M.new()
   return self
 end
 
+---@param ctx filter_do.FxCtx
 local function gen_buf_range_footer(ctx)
-  if ctx.v_char_wised then
+  if ctx.buf_range.v_char_wised then
     local range_mode = "Visual-Range"
-    local end_col = ctx.buf_range.end_col
-    if end_col == vim.v.maxcol then
+    local end_col = tostring(ctx.buf_range.end_col)
+    if ctx.buf_range.end_col == vim.v.maxcol then
       end_col = "$"
     end
     return {
@@ -53,8 +54,6 @@ local function gen_scratch_footer(can_undo)
       { " " },
       { " [U]ndo ", "CursorLine" },
       { " " },
-      { " [R]eset ", "CursorLine" },
-      { " " },
       { " [C]lose ", "CursorLine" },
       { " " },
     }
@@ -66,8 +65,6 @@ local function gen_scratch_footer(can_undo)
       { " [A]pply ", "CursorLine" },
       { " " },
       { " [P]review ", "CursorLine" },
-      { " " },
-      { " [R]eset ", "CursorLine" },
       { " " },
       { " [C]lose ", "CursorLine" },
       { " " },
@@ -106,7 +103,7 @@ function M:open_scratch_win(ctx)
     U.msg_err(err_msg)
     return
   end
-  local stub_path = filter:gen_stub_file(ctx)
+  local stub_path = filter:gen_stub_by_spec(ctx.code_snip_spec)
   if not stub_path then
     return
   end
@@ -254,24 +251,6 @@ function M:config_scratch_buf()
         footer = gen_scratch_footer(self.target_buf_undo_seq),
       })
       self:highlight_buf_range(self.ctx)
-    end,
-  })
-
-  vim.api.nvim_buf_set_keymap(self.scratch_buf_id, "n", "<LocalLeader>r", "", {
-    desc = "filter-do: Reset scratch",
-    callback = function()
-      local new_ctx = vim.deepcopy(self.ctx)
-      new_ctx.edit_scratch = false
-      new_ctx.use_last_code = false
-      new_ctx.code_snip = ""
-      -- reset current stub file contents
-      self.filter:gen_stub_file(new_ctx, self.stub_path)
-      vim.api.nvim_buf_call(self.scratch_buf_id, function()
-        vim.cmd.edit()
-        vim.cmd.normal("gg0")
-        vim.fn.search("USER_CODE")
-        vim.cmd.normal("^")
-      end)
     end,
   })
 

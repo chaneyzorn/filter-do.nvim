@@ -12,7 +12,7 @@ for cmd_name, desc in pairs(fx_cmd_t) do
     bar = false,
     bang = false,
     nargs = "+",
-    range = "%",
+    range = "%", -- default range is whole buffer
     complete = function(_, cmdline, _)
       -- args: arg_lead:string, cmdline:string, curpos:number
       -- print(string.format("arg_lead=%s cmdline=%s curpos=%s", arg_lead, cmdline, curpos))
