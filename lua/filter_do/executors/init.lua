@@ -41,6 +41,17 @@ end
 ---@param tpl_name string
 ---@return filter_do.executors.ExecutorInfo
 function E.get_executor(tpl_name)
+  local cfg = require("filter_do.config").get()
+  if cfg.get_executor then
+    local executor = cfg.get_executor(tpl_name)
+    if executor then
+      if type(executor) == "string" then
+        return executors[executor] or executors.shebang
+      elseif type(executor) == "table" then
+        return executor
+      end
+    end
+  end
   return tpl_exec[tpl_name] or executors.shebang
 end
 

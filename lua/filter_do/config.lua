@@ -5,6 +5,7 @@ local defaults = {
   filter_draft_limit = 10,
   executors = {},
   tpl_exec = {},
+  get_executor = nil,
 }
 
 local config = vim.deepcopy(defaults)
@@ -26,6 +27,11 @@ function M.setup(user_config)
       require("filter_do.filter").clean_all_stubs(keep_num)
     end,
   })
+end
+
+---@return filter_do.UserConfig
+function M.get()
+  return config
 end
 
 return M

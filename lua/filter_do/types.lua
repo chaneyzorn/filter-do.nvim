@@ -45,6 +45,7 @@
 ---@class filter_do.UserConfig
 ---@field executors? table<string, filter_do.executors.ExecutorInfo>
 ---@field tpl_exec? table<string, string|filter_do.executors.ExecutorInfo>
+---@field get_executor? fun(tpl_name:string):nil|string|filter_do.executors.ExecutorInfo
 
 ---@class (partial) filter_do.FxCtxOpts: filter_do.FxCtx
 
