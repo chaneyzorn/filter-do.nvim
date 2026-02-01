@@ -54,6 +54,8 @@ local function gen_scratch_footer(can_undo)
       { " " },
       { " [U]ndo ", "CursorLine" },
       { " " },
+      { " [H]istory ", "CursorLine" },
+      { " " },
       { " [C]lose ", "CursorLine" },
       { " " },
     }
@@ -65,6 +67,8 @@ local function gen_scratch_footer(can_undo)
       { " [A]pply ", "CursorLine" },
       { " " },
       { " [P]review ", "CursorLine" },
+      { " " },
+      { " [H]istory ", "CursorLine" },
       { " " },
       { " [C]lose ", "CursorLine" },
       { " " },
@@ -208,6 +212,45 @@ function M:action_apply()
   self:clear_buf_range_highlight(self.ctx)
 end
 
+function M:action_history()
+  vim.ui.select(self.filter:list_history_stubs("desc", true), {
+    prompt = "filter-do.nvim: Select history snippet record",
+    format_item = function(item)
+      local file_name = item.filename
+      if file_name == self.filter.tpl_name then
+        file_name = U.short_path(item.path, 3)
+      end
+      local time_str = vim.fn.strftime("%Y-%m-%dT%H:%M:%S", item.timestamp)
+      return string.format("%s %s", time_str, file_name)
+    end,
+  }, function(record, _)
+    if not record then
+      return
+    end
+    local stub_path = self.filter:gen_stub_by_exist_file(record.path)
+    if not stub_path then
+      return
+    end
+    self.stub_path = stub_path
+    -- update buffer content
+    vim.api.nvim_buf_call(self.scratch_buf_id, function()
+      vim.cmd.update()
+    end)
+    vim.api.nvim_buf_set_name(self.scratch_buf_id, stub_path)
+    vim.api.nvim_buf_call(self.scratch_buf_id, function()
+      vim.cmd.edit()
+      vim.cmd.normal("gg0")
+      local rs = vim.fn.search("USER_CODE")
+      if rs == 0 then
+        -- Placeholder replaced by user code snippet, search next placeholder
+        vim.fn.search("user code ended")
+        vim.cmd.normal("{{}k")
+      end
+      vim.cmd.normal("^")
+    end)
+  end)
+end
+
 function M:action_close()
   vim.api.nvim_buf_call(self.scratch_buf_id, function()
     vim.cmd.update()
@@ -270,6 +313,13 @@ function M:config_scratch_buf()
       end
 
       self:action_preview_diff()
+    end,
+  })
+
+  vim.api.nvim_buf_set_keymap(self.scratch_buf_id, "n", "<LocalLeader>h", "", {
+    desc = "filter-do: History snippet record",
+    callback = function()
+      self:action_history()
     end,
   })
 

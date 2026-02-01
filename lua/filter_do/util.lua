@@ -103,7 +103,7 @@ end
 ---@return string
 function U.ensure_cache_path(sub_path)
   local cache_path = vim.fn.stdpath("cache")
-  local target_path = vim.fs.joinpath(cache_path, "filter_do.nvim")
+  local target_path = vim.fs.joinpath(cache_path, "filter-do.nvim")
   if sub_path then
     target_path = vim.fs.joinpath(target_path, sub_path)
   end
@@ -116,7 +116,7 @@ end
 ---@return string
 function U.get_log_path()
   local tmp_path = vim.fs.dirname(vim.fn.tempname())
-  local log_path = vim.fs.joinpath(tmp_path, "filter_do.log")
+  local log_path = vim.fs.joinpath(tmp_path, "filter-do.log")
   return log_path
 end
 

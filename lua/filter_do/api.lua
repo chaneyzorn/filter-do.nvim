@@ -108,7 +108,12 @@ function M.select_tpl_and_filter_do()
       local record = Async.ui_select(M.list_history_by_tpl(tpl_name, "desc", true), {
         prompt = "filter-do.nvim: Select history snippet record",
         format_item = function(item)
-          return string.format("%s %s", item.filename, vim.fn.strftime("%Y-%m-%dT%H:%M:%S", item.timestamp))
+          local file_name = item.filename
+          if file_name == tpl_name then
+            file_name = U.short_path(item.path, 3)
+          end
+          local time_str = vim.fn.strftime("%Y-%m-%dT%H:%M:%S", item.timestamp)
+          return string.format("%s %s", time_str, file_name)
         end,
       })
       return record and { type = "exist_path", value = record.path }
