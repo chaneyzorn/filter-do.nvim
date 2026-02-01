@@ -4,7 +4,7 @@ local M = {}
 ---@async
 ---@param items any[]
 ---@param opts table
----@return any
+---@return any | nil
 function M.ui_select(items, opts)
   opts = opts or { prompt = "Select" }
   local co = coroutine.running()

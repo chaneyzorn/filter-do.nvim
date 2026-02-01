@@ -7,7 +7,7 @@ local Async = require("filter_do.async")
 local M = {}
 
 ---list all available filters
----@return table<{tpl_name:string, path:string}>[]
+---@return {tpl_name:string, path:string}[]
 function M.list_filters()
   local res = {}
   for _, filter in pairs(F.list_filters()) do
@@ -46,11 +46,17 @@ end
 
 ---@async
 ---@param ctx_getter filter_do.api.FxCtxGetter
----@return filter_do.FxCtx
+---@return filter_do.FxCtx | nil
 local function get_ctx_from_getter(ctx_getter)
   local buf_range = ctx_getter.get_buf_range()
   local tpl_name = ctx_getter.select_tpl()
+  if not tpl_name then
+    return nil
+  end
   local code_snip_spec = ctx_getter.get_code_snip_spec(tpl_name)
+  if not code_snip_spec then
+    return nil
+  end
   local edit_scratch = ctx_getter.edit_before_apply()
   local env = ctx_getter.get_env(buf_range)
 
@@ -70,7 +76,9 @@ end
 function M.filter_do_wrapper(ctx_getter)
   coroutine.wrap(function()
     local ctx = get_ctx_from_getter(ctx_getter)
-    M.filter_do(ctx)
+    if ctx then
+      M.filter_do(ctx)
+    end
   end)()
 end
 
@@ -86,22 +94,24 @@ function M.select_tpl_and_filter_do()
       return U.get_current_buffer_range()
     end,
     select_tpl = function()
+      ---@type { tpl_name: string, path: string } | nil
       local filter = Async.ui_select(M.list_filters(), {
         prompt = "filter-do.nvim: Select filter template",
         format_item = function(item)
           return U.short_path(item.path, 3)
         end,
       })
-      return filter.tpl_name
+      return filter and filter.tpl_name
     end,
     get_code_snip_spec = function(tpl_name)
+      ---@type { path: string, filename: string, timestamp: integer } | nil
       local record = Async.ui_select(M.list_history_by_tpl(tpl_name, "desc", true), {
         prompt = "filter-do.nvim: Select history snippet record",
         format_item = function(item)
           return string.format("%s %s", item.filename, vim.fn.strftime("%Y-%m-%dT%H:%M:%S", item.timestamp))
         end,
       })
-      return { type = "exist_path", value = record.path }
+      return record and { type = "exist_path", value = record.path }
     end,
     edit_before_apply = function()
       return true

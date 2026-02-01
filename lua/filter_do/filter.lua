@@ -59,7 +59,7 @@ end
 
 ---@param order string "asc" | "desc"
 ---@param include_tpl_itself boolean
----@return table<{path:string, filename:string, timestamp:integer}>[]
+---@return {path:string, filename:string, timestamp:integer}[]
 function F:list_history_stubs(order, include_tpl_itself)
   local res = {}
   local stub_paths = self:list_all_stubs()
@@ -384,7 +384,7 @@ end
 ---@param tpl_name string
 ---@param order string "asc" | "desc"
 ---@param include_tpl_itself boolean
----@return table<{path:string, filename:string, timestamp:integer}>[]
+---@return {path:string, filename:string, timestamp:integer}[]
 function F.list_history_by_tpl(tpl_name, order, include_tpl_itself)
   local filter = F.get_filter_by_name(tpl_name)
   if not filter then
