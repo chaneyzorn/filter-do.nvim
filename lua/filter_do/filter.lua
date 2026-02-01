@@ -57,6 +57,42 @@ function F:list_all_stubs()
   return vim.fn.glob(self:_stub_path("*"), false, true)
 end
 
+---@param order string "asc" | "desc"
+---@param include_tpl_itself boolean
+---@return table<{path:string, filename:string, timestamp:integer}>[]
+function F:list_history_stubs(order, include_tpl_itself)
+  local res = {}
+  local stub_paths = self:list_all_stubs()
+  for _, path in ipairs(stub_paths) do
+    local filename = vim.fs.basename(path)
+    local timestamp_str = string.match(filename, "^fx_stub%.(.-)%.")
+    if timestamp_str then
+      local timestamp = tonumber(timestamp_str)
+      if timestamp then
+        table.insert(res, { path = path, filename = filename, timestamp = timestamp })
+      end
+    end
+  end
+  if include_tpl_itself then
+    table.insert(res, {
+      path = self.path,
+      filename = self.tpl_name,
+      timestamp = os.time(),
+    })
+  end
+  if order == "desc" then
+    table.sort(res, function(a, b)
+      return a.timestamp > b.timestamp
+    end)
+  else
+    table.sort(res, function(a, b)
+      return a.timestamp < b.timestamp
+    end)
+  end
+  return res
+end
+
+---@param keep_num integer
 function F:clean_stubs(keep_num)
   local stub_paths = self:list_all_stubs()
   if #stub_paths <= keep_num then
@@ -343,6 +379,18 @@ end
 function F.get_filter_by_name(tpl_name)
   local filters = F.list_filters()
   return filters[tpl_name]
+end
+
+---@param tpl_name string
+---@param order string "asc" | "desc"
+---@param include_tpl_itself boolean
+---@return table<{path:string, filename:string, timestamp:integer}>[]
+function F.list_history_by_tpl(tpl_name, order, include_tpl_itself)
+  local filter = F.get_filter_by_name(tpl_name)
+  if not filter then
+    return {}
+  end
+  return filter:list_history_stubs(order, include_tpl_itself)
 end
 
 ---@param keep_num integer

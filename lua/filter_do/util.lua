@@ -35,6 +35,69 @@ function U.buf_short_name(bufnr)
   return vim.fn.fnamemodify(full_name, ":~:.")
 end
 
+---@param path string
+---@param level integer
+---@return string
+function U.short_path(path, level)
+  local normalized_path = vim.fs.normalize(path)
+  if normalized_path == "" or normalized_path == "/" then
+    return normalized_path
+  end
+
+  local target_level = math.max(1, tonumber(level) or 3)
+  local result_parts = vim.ringbuf(target_level)
+  for _, part in ipairs(vim.split(normalized_path, "/", { trimempty = true })) do
+    result_parts:push(part)
+  end
+
+  local res = {}
+  while true do
+    local item = result_parts:pop()
+    if item == nil then
+      break
+    end
+    table.insert(res, item)
+  end
+  return table.concat(res, "/")
+end
+
+---@return filter_do.BufRange
+function U.get_current_buffer_range()
+  local mode = vim.fn.mode()
+  local bufnr = vim.api.nvim_get_current_buf()
+
+  if mode:match("^v") then
+    local _, lnum1, col1 = unpack(vim.fn.getpos("'<"))
+    local _, lnum2, col2 = unpack(vim.fn.getpos("'>"))
+    return {
+      bufnr = bufnr,
+      start_row = lnum1,
+      end_row = lnum2,
+      start_col = col1,
+      end_col = col2,
+    }
+  end
+
+  if mode:match("^V") then
+    local _, lnum1, _ = unpack(vim.fn.getpos("'<"))
+    local _, lnum2, _ = unpack(vim.fn.getpos("'>"))
+    return {
+      bufnr = bufnr,
+      start_row = lnum1,
+      end_row = lnum2,
+      start_col = 1,
+      end_col = vim.v.maxcol,
+    }
+  end
+
+  return {
+    bufnr = bufnr,
+    start_row = 1,
+    end_row = vim.api.nvim_buf_line_count(bufnr),
+    start_col = 1,
+    end_col = vim.v.maxcol,
+  }
+end
 
 ---@param sub_path string|nil
 ---@return string
