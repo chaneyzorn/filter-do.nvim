@@ -1,4 +1,4 @@
-*xdo.txt*          For Neovim >= 0.8.0          Last change: 2025 September 24
+*xdo.txt*           For Neovim >= 0.8.0          Last change: 2026 February 01
 
 ==============================================================================
 Table of Contents                                      *xdo-table-of-contents*
@@ -14,6 +14,8 @@ Table of Contents                                      *xdo-table-of-contents*
 1. filter-do.nvim                                         *xdo-filter-do.nvim*
 
 The missing `:jsdo` and more.
+
+TODO: update README
 
 
 FEATURES                                         *xdo-filter-do.nvim-features*
