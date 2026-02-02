@@ -83,12 +83,19 @@ local M = {}
 
 ---@param user_cmd vim.api.keyset.create_user_command.command_args
 function M.fx_cmd(user_cmd)
-  local ctx = parse_fx_cmd_ctx(user_cmd)
-  return require("filter_do.api").filter_do(ctx)
-end
+  local sub_cmds = {
+    log = require("filter_do.api").view_log,
+  }
 
-function M.fx_log_cmd()
-  require("filter_do.api").view_log()
+  -- check sub_cmds first
+  local ctx = parse_fx_cmd_ctx(user_cmd)
+  local sub_cmd = ctx.tpl_name
+  local sub_cmd_fn = sub_cmds[sub_cmd]
+  if sub_cmd_fn then
+    return sub_cmd_fn()
+  else
+    return require("filter_do.api").filter_do(ctx)
+  end
 end
 
 return M

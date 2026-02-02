@@ -16,13 +16,10 @@ for cmd_name, desc in pairs(fx_cmd_t) do
     complete = function(_, cmdline, _)
       -- args: arg_lead:string, cmdline:string, curpos:number
       -- print(string.format("arg_lead=%s cmdline=%s curpos=%s", arg_lead, cmdline, curpos))
-      local part1 = {}
-      local filters = require("filter_do.filter").list_filters()
-      for k in pairs(filters) do
-        table.insert(part1, k)
-        table.insert(part1, k .. "+")
-        table.insert(part1, k .. "-")
-        table.insert(part1, k .. "+-")
+      local part1 = { "log" }
+      local filters = require("filter_do.api").list_filters()
+      for _, filter in ipairs(filters) do
+        table.insert(part1, filter.tpl_name)
       end
 
       local part1_present = false
@@ -42,7 +39,3 @@ for cmd_name, desc in pairs(fx_cmd_t) do
     end,
   })
 end
-
-vim.api.nvim_create_user_command("FxLog", function()
-  require("filter_do.cmd").fx_log_cmd()
-end, { desc = "View filter_do.nvim log" })
