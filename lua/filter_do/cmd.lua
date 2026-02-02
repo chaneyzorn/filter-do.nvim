@@ -6,25 +6,25 @@ local U = require("filter_do.util")
 ---@return filter_do.BufRange
 local function get_buf_range_from_cmd(user_cmd)
   local bufnr = vim.api.nvim_get_current_buf()
-  local v_char_wised = user_cmd.name == "Fxv" and user_cmd.range == 2
 
   ---@type filter_do.BufRange
   local buf_range = {
     bufnr = bufnr,
-    v_char_wised = v_char_wised,
+    v_char_wised = false,
     start_row = user_cmd.line1,
     end_row = user_cmd.line2,
     start_col = 1,
     end_col = vim.v.maxcol,
   }
 
-  if v_char_wised then
+  -- v-mode char-wised modifier
+  if user_cmd.bang and user_cmd.range == 2 then
     local _, lnum1, col1 = unpack(vim.fn.getpos("'<"))
     local _, lnum2, col2 = unpack(vim.fn.getpos("'>"))
     if lnum1 == user_cmd.line1 and lnum2 == user_cmd.line2 then
       buf_range = {
         bufnr = bufnr,
-        v_char_wised = v_char_wised,
+        v_char_wised = true,
         start_row = user_cmd.line1,
         end_row = user_cmd.line2,
         start_col = col1,

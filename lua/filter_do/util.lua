@@ -66,23 +66,33 @@ function U.get_current_buffer_range()
   local mode = vim.fn.mode()
   local bufnr = vim.api.nvim_get_current_buf()
 
+  ---@type filter_do.BufRange
+  local buf_range = {
+    bufnr = bufnr,
+    v_char_wised = false,
+    start_row = 1,
+    end_row = vim.api.nvim_buf_line_count(bufnr),
+    start_col = 1,
+    end_col = vim.v.maxcol,
+  }
   if mode:match("^v") then
     local _, lnum1, col1 = unpack(vim.fn.getpos("'<"))
     local _, lnum2, col2 = unpack(vim.fn.getpos("'>"))
-    return {
+    buf_range = {
       bufnr = bufnr,
+      v_char_wised = true,
       start_row = lnum1,
       end_row = lnum2,
       start_col = col1,
       end_col = col2,
     }
   end
-
   if mode:match("^V") then
     local _, lnum1, _ = unpack(vim.fn.getpos("'<"))
     local _, lnum2, _ = unpack(vim.fn.getpos("'>"))
-    return {
+    buf_range = {
       bufnr = bufnr,
+      v_char_wised = false,
       start_row = lnum1,
       end_row = lnum2,
       start_col = 1,
@@ -90,13 +100,7 @@ function U.get_current_buffer_range()
     }
   end
 
-  return {
-    bufnr = bufnr,
-    start_row = 1,
-    end_row = vim.api.nvim_buf_line_count(bufnr),
-    start_col = 1,
-    end_col = vim.v.maxcol,
-  }
+  return buf_range
 end
 
 ---@param sub_path string|nil
