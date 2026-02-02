@@ -3,6 +3,7 @@
 local F = require("filter_do.filter")
 local U = require("filter_do.util")
 local Async = require("filter_do.async")
+local Cfg = require("filter_do.config").get()
 
 local M = {}
 
@@ -105,7 +106,7 @@ function M.select_tpl_and_filter_do()
     end,
     get_code_snip_spec = function(tpl_name)
       ---@type filter_do.SnippetHistoryRecord | nil
-      local record = Async.ui_select(M.list_history_by_tpl(tpl_name, "desc", true), {
+      local record = Async.ui_select(M.list_history_by_tpl(tpl_name, "desc", Cfg.show_tpl_as_record), {
         prompt = "filter-do.nvim: Select history snippet record",
         format_item = function(item)
           return F.format_snippet_record(item)

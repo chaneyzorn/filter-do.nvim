@@ -2,7 +2,8 @@
 
 ---@type filter_do.UserConfig
 local defaults = {
-  filter_records_num = 10,
+  snippet_records_num = 10,
+  show_tpl_as_record = true,
   executors = {},
   tpl_exec = {},
   get_executor = nil,
@@ -23,7 +24,7 @@ function M.setup(user_config)
   vim.api.nvim_create_autocmd("VimLeavePre", {
     group = vim.api.nvim_create_augroup("filter_do.cleanup", { clear = true }),
     callback = function()
-      local keep_num = config.filter_records_num or 10
+      local keep_num = config.snippet_records_num or 10
       require("filter_do.filter").clean_all_stubs_and_records(keep_num)
     end,
   })

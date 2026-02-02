@@ -2,6 +2,7 @@
 
 local F = require("filter_do.filter")
 local U = require("filter_do.util")
+local Cfg = require("filter_do.config").get()
 
 local M = {}
 M.__index = M
@@ -213,7 +214,7 @@ function M:action_apply()
 end
 
 function M:action_history()
-  vim.ui.select(self.filter:list_history_records("desc", true), {
+  vim.ui.select(self.filter:list_history_records("desc", Cfg.show_tpl_as_record), {
     prompt = "filter-do.nvim: Select history snippet record",
     format_item = function(item)
       return F.format_snippet_record(item)

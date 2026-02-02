@@ -43,7 +43,8 @@
 ---@field filter_cmd fun(ctx:filter_do.executors.ExecutorCtx):string[]|nil
 
 ---@class filter_do.UserConfig
----@field filter_records_num? integer
+---@field snippet_records_num? integer
+---@field show_tpl_as_record? boolean
 ---@field executors? table<string, filter_do.executors.ExecutorInfo>
 ---@field tpl_exec? table<string, string|filter_do.executors.ExecutorInfo>
 ---@field get_executor? fun(tpl_name:string):nil|string|filter_do.executors.ExecutorInfo
