@@ -2,7 +2,8 @@
 
 local F = require("filter_do.filter")
 local U = require("filter_do.util")
-local Cfg = require("filter_do.config").get()
+local C = require("filter_do.config")
+local Cfg = C.get()
 
 local M = {}
 M.__index = M
@@ -47,48 +48,77 @@ local function gen_buf_range_footer(ctx)
   }
 end
 
-local function gen_scratch_footer(can_undo)
-  if can_undo then
-    return {
-      { " " },
-      { " <LocalLeader>+ ", "Visual" },
-      { " " },
-      { " [U]ndo ", "CursorLine" },
-      { " " },
-      { " [H]istory ", "CursorLine" },
-      { " " },
-      { " [C]lose ", "CursorLine" },
-      { " " },
-    }
+---@param action string
+---@param ck boolean
+---@return string
+local function key_tips(action, ck)
+  if ck then
+    local keymap = Cfg.action_keymaps[action:lower()]
+    keymap = string.gsub(keymap, "<([Ll][Oo][Cc][Aa][Ll][Ll][Ee][Aa][Dd][Ee][Rr])>", "<LL>")
+    keymap = string.gsub(keymap, "<([Ll][Ee][Aa][Dd][Ee][Rr])>", "<L>")
+    return string.format(" %s(%s) ", action, keymap)
   else
-    return {
-      { " " },
-      { " <LocalLeader>+ ", "Visual" },
-      { " " },
-      { " [A]pply ", "CursorLine" },
-      { " " },
-      { " [P]review ", "CursorLine" },
-      { " " },
-      { " [H]istory ", "CursorLine" },
-      { " " },
-      { " [C]lose ", "CursorLine" },
-      { " " },
-    }
+    local first_char = action:sub(1, 1):upper()
+    local rest_chars = action:sub(2)
+    return string.format(" [%s]%s ", first_char, rest_chars)
   end
 end
 
+local function gen_scratch_footer(can_undo)
+  local footer = {}
+  local ck = C.has_customized_keymaps()
+  if not ck then
+    vim.list_extend(footer, {
+      { " " },
+      { " <LocalLeader>+ ", "Visual" },
+    })
+  end
+
+  if can_undo then
+    vim.list_extend(footer, {
+      { " " },
+      { key_tips("Undo", ck), "CursorLine" },
+      { " " },
+      { key_tips("History", ck), "CursorLine" },
+      { " " },
+      { key_tips("Close", ck), "CursorLine" },
+      { " " },
+    })
+  else
+    vim.list_extend(footer, {
+      { " " },
+      { key_tips("Apply", ck), "CursorLine" },
+      { " " },
+      { key_tips("Preview", ck), "CursorLine" },
+      { " " },
+      { key_tips("History", ck), "CursorLine" },
+      { " " },
+      { key_tips("Close", ck), "CursorLine" },
+      { " " },
+    })
+  end
+  return footer
+end
+
 local function gen_preview_footer()
-  return {
+  local footer = {}
+  local ck = C.has_customized_keymaps()
+  if not ck then
+    vim.list_extend(footer, {
+      { " " },
+      { " <LocalLeader>+ ", "Visual" },
+    })
+  end
+  vim.list_extend(footer, {
     { " " },
-    { " <LocalLeader>+ ", "Visual" },
+    { key_tips("Apply", ck), "CursorLine" },
     { " " },
-    { " [A]pply ", "CursorLine" },
+    { key_tips("Back", ck), "CursorLine" },
     { " " },
-    { " [B]ack ", "CursorLine" },
+    { key_tips("Close", ck), "CursorLine" },
     { " " },
-    { " [C]lose ", "CursorLine" },
-    { " " },
-  }
+  })
+  return footer
 end
 
 local function gen_title(title, hi_group)
@@ -255,6 +285,8 @@ function M:action_close()
 end
 
 function M:config_scratch_buf()
+  local keymap = Cfg.action_keymaps
+
   vim.api.nvim_buf_call(self.scratch_buf_id, function()
     vim.cmd.edit()
     vim.cmd.normal("gg0")
@@ -267,14 +299,14 @@ function M:config_scratch_buf()
     vim.cmd.normal("^")
   end)
 
-  vim.api.nvim_buf_set_keymap(self.scratch_buf_id, "n", "<LocalLeader>a", "", {
+  vim.api.nvim_buf_set_keymap(self.scratch_buf_id, "n", keymap.apply, "", {
     desc = "filter-do: Apply filter",
     callback = function()
       self:action_apply()
     end,
   })
 
-  vim.api.nvim_buf_set_keymap(self.scratch_buf_id, "n", "<LocalLeader>u", "", {
+  vim.api.nvim_buf_set_keymap(self.scratch_buf_id, "n", keymap.undo, "", {
     desc = "filter-do: Undo last apply",
     callback = function()
       if self.target_buf_undo_seq == nil then
@@ -293,7 +325,7 @@ function M:config_scratch_buf()
     end,
   })
 
-  vim.api.nvim_buf_set_keymap(self.scratch_buf_id, "n", "<LocalLeader>p", "", {
+  vim.api.nvim_buf_set_keymap(self.scratch_buf_id, "n", keymap.preview, "", {
     desc = "filter-do: Preview diff",
     callback = function()
       if self.target_buf_undo_seq ~= nil then
@@ -312,14 +344,14 @@ function M:config_scratch_buf()
     end,
   })
 
-  vim.api.nvim_buf_set_keymap(self.scratch_buf_id, "n", "<LocalLeader>h", "", {
+  vim.api.nvim_buf_set_keymap(self.scratch_buf_id, "n", keymap.history, "", {
     desc = "filter-do: History snippet record",
     callback = function()
       self:action_history()
     end,
   })
 
-  vim.api.nvim_buf_set_keymap(self.scratch_buf_id, "n", "<LocalLeader>c", "", {
+  vim.api.nvim_buf_set_keymap(self.scratch_buf_id, "n", keymap.close, "", {
     desc = "filter-do: Close window",
     callback = function()
       self:action_close()
@@ -414,7 +446,9 @@ function M:config_preview_buf()
     vim.api.nvim_set_option_value("foldlevel", 0, { win = self.filter_win_id })
   end
 
-  vim.api.nvim_buf_set_keymap(self.preview_buf_id, "n", "<LocalLeader>a", "", {
+  local keymap = Cfg.action_keymaps
+
+  vim.api.nvim_buf_set_keymap(self.preview_buf_id, "n", keymap.apply, "", {
     desc = "filter-do: Apply filter",
     callback = function()
       back_fn()
@@ -422,12 +456,12 @@ function M:config_preview_buf()
     end,
   })
 
-  vim.api.nvim_buf_set_keymap(self.preview_buf_id, "n", "<LocalLeader>b", "", {
+  vim.api.nvim_buf_set_keymap(self.preview_buf_id, "n", keymap.back, "", {
     desc = "filter-do: Back to scratch",
     callback = back_fn,
   })
 
-  vim.api.nvim_buf_set_keymap(self.preview_buf_id, "n", "<LocalLeader>c", "", {
+  vim.api.nvim_buf_set_keymap(self.preview_buf_id, "n", keymap.close, "", {
     desc = "filter-do: Close window",
     callback = function()
       back_fn()

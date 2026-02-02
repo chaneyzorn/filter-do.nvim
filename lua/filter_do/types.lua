@@ -42,12 +42,15 @@
 ---@field pre_action fun(ctx:filter_do.executors.ExecutorCtx):filter_do.executors.ExecutorCtx|nil
 ---@field filter_cmd fun(ctx:filter_do.executors.ExecutorCtx):string[]|nil
 
----@class filter_do.UserConfig
----@field snippet_records_num? integer
----@field show_tpl_as_record? boolean
----@field executors? table<string, filter_do.executors.ExecutorInfo>
----@field tpl_exec? table<string, string|filter_do.executors.ExecutorInfo>
+---@class filter_do.Config
+---@field snippet_record_num integer
+---@field show_tpl_as_record boolean
+---@field executors table<string, filter_do.executors.ExecutorInfo>
+---@field tpl_exec table<string, string|filter_do.executors.ExecutorInfo>
 ---@field get_executor? fun(tpl_name:string):nil|string|filter_do.executors.ExecutorInfo
+---@field action_keymaps table<string,string>
+
+---@class (partial) filter_do.UserConfig: filter_do.Config
 
 ---@class (partial) filter_do.FxCtxOpts: filter_do.FxCtx
 
