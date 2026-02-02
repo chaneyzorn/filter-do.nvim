@@ -213,15 +213,10 @@ function M:action_apply()
 end
 
 function M:action_history()
-  vim.ui.select(self.filter:list_history_stubs("desc", true), {
+  vim.ui.select(self.filter:list_history_records("desc", true), {
     prompt = "filter-do.nvim: Select history snippet record",
     format_item = function(item)
-      local file_name = item.filename
-      if file_name == self.filter.tpl_name then
-        file_name = U.short_path(item.path, 3)
-      end
-      local time_str = vim.fn.strftime("%Y-%m-%dT%H:%M:%S", item.timestamp)
-      return string.format("%s %s", time_str, file_name)
+      return F.format_snippet_record(item)
     end,
   }, function(record, _)
     if not record then

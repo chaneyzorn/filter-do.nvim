@@ -120,4 +120,27 @@ function U.get_log_path()
   return log_path
 end
 
+---@param path string
+---@return string|nil
+function U.file_sha256(path)
+  if not vim.uv.fs_stat(path) then
+    local msg = string.format("filter-do.nvim: file %s not exists during sha256", path)
+    U.msg_err(msg)
+    return nil
+  end
+
+  local file, err = io.open(path, "rb")
+  if not file then
+    local msg = string.format("filter-do.nvim: failed to open %s during sha256, %s", path, err)
+    U.msg_err(msg)
+    return nil
+  end
+
+  local content = file:read("*a") or ""
+  file:close()
+
+  local hash = vim.fn.sha256(content)
+  return hash
+end
+
 return U

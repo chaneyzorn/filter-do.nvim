@@ -1,15 +1,14 @@
 local U = require("filter_do.util")
 local E = require("filter_do.executors")
 
----@class filter_do.filter.Tpl
----@field  path string
----@field  content string
+local RECORD_PREFIX = "fx_record"
+local STUB_PREFIX = string.format("fx_stub_%s", vim.fn.getpid())
 
 ---@class filter_do.filter.Filter
 ---@field tpl_name string
 ---@field path string
 ---@field executor filter_do.executors.ExecutorInfo
----@field private _tpl filter_do.filter.Tpl?
+---@field private _tpl? {path:string, content:string}
 local F = {}
 F.__index = F
 
@@ -25,7 +24,7 @@ function F.new(path)
   return self
 end
 
----@return filter_do.filter.Tpl|nil
+---@return {path:string, content:string}|nil
 function F:_load_template_file()
   if self._tpl then
     return self._tpl
@@ -45,38 +44,58 @@ function F:_load_template_file()
   return self._tpl
 end
 
+---@param prefix string
 ---@param identify string|integer
 ---@return string
-function F:_stub_path(identify)
-  local stub_file_name = string.format("fx_stub.%s.%s", identify, self.tpl_name)
+function F:_stub_path(prefix, identify)
+  local stub_file_name = string.format("%s.%s.%s", prefix, identify, self.tpl_name)
   return vim.fs.joinpath(U.ensure_cache_path("stubs"), stub_file_name)
 end
 
+---@param current_instance boolean
 ---@return string[]
-function F:list_all_stubs()
-  return vim.fn.glob(self:_stub_path("*"), false, true)
+function F:list_stub_paths(current_instance)
+  if current_instance then
+    return vim.fn.glob(self:_stub_path(STUB_PREFIX, "*"), false, true)
+  else
+    local path = vim.fs.joinpath(U.ensure_cache_path("stubs"), string.format("fx_stub*.%s", self.tpl_name))
+    return vim.fn.glob(path, false, true)
+  end
+end
+
+---@return string[]
+function F:list_record_paths()
+  return vim.fn.glob(self:_stub_path(RECORD_PREFIX, "*"), false, true)
 end
 
 ---@param order string "asc" | "desc"
 ---@param include_tpl_itself boolean
----@return {path:string, filename:string, timestamp:integer}[]
-function F:list_history_stubs(order, include_tpl_itself)
+---@return filter_do.SnippetHistoryRecord[]
+function F:list_history_records(order, include_tpl_itself)
   local res = {}
-  local stub_paths = self:list_all_stubs()
+  local stub_paths = self:list_record_paths()
   for _, path in ipairs(stub_paths) do
     local filename = vim.fs.basename(path)
-    local timestamp_str = string.match(filename, "^fx_stub%.(.-)%.")
+    local sha256sum, timestamp_str = string.match(filename, "^fx_record%.(.-)%.(.-)%..+")
     if timestamp_str then
       local timestamp = tonumber(timestamp_str)
       if timestamp then
-        table.insert(res, { path = path, filename = filename, timestamp = timestamp })
+        table.insert(res, {
+          tpl_name = self.tpl_name,
+          path = path,
+          filename = filename,
+          sha256sum = sha256sum,
+          timestamp = timestamp,
+        })
       end
     end
   end
   if include_tpl_itself then
     table.insert(res, {
+      tpl_name = self.tpl_name,
       path = self.path,
       filename = self.tpl_name,
+      sha256sum = "",
       timestamp = os.time(),
     })
   end
@@ -93,23 +112,30 @@ function F:list_history_stubs(order, include_tpl_itself)
 end
 
 ---@param keep_num integer
-function F:clean_stubs(keep_num)
-  local stub_paths = self:list_all_stubs()
-  if #stub_paths <= keep_num then
+function F:clean_stubs_and_records(keep_num)
+  -- clean stub files
+  local stub_paths = self:list_stub_paths(true)
+  for _, stub_path in ipairs(stub_paths) do
+    os.remove(stub_path)
+  end
+
+  -- clean history records
+  local record_paths = self:list_record_paths()
+  if #record_paths <= keep_num then
     return
   end
   -- sort by filename ascendingly to remove old stubs first
-  table.sort(stub_paths, function(a, b)
+  table.sort(record_paths, function(a, b)
     return a < b
   end)
-  for i = 1, #stub_paths - keep_num do
-    os.remove(stub_paths[i])
+  for i = 1, #record_paths - keep_num do
+    os.remove(record_paths[i])
   end
 end
 
 ---@return string|nil
 function F:_get_last_stub()
-  local stub_paths = self:list_all_stubs()
+  local stub_paths = self:list_record_paths()
   if #stub_paths == 0 then
     return nil
   end
@@ -128,7 +154,7 @@ function F:gen_stub_by_code_snip(code_snip)
     return nil
   end
 
-  local stub_path = self:_stub_path(os.time())
+  local stub_path = self:_stub_path(STUB_PREFIX, os.time())
   local f, err = io.open(stub_path, "w")
   if f == nil then
     local err_msg = string.format("filter_do.nvim: %s", err)
@@ -160,7 +186,7 @@ function F:gen_stub_by_last_used()
   end
 
   -- rename the last used stub to a new one with current timestamp
-  local new_stub_path = self:_stub_path(os.time())
+  local new_stub_path = self:_stub_path(STUB_PREFIX, os.time())
   local cp_res = vim.system({ "cp", last_stub, new_stub_path }):wait()
   if cp_res.code ~= 0 then
     local err_msg = string.format("filter_do.nvim: failed to copy stub file %s to %s", last_stub, new_stub_path)
@@ -179,7 +205,7 @@ function F:gen_stub_by_exist_file(src_path)
     return nil
   end
 
-  local new_stub_path = self:_stub_path(os.time())
+  local new_stub_path = self:_stub_path(STUB_PREFIX, os.time())
   local cp_res = vim.system({ "cp", src_path, new_stub_path }):wait()
   if cp_res.code ~= 0 then
     local err_msg = string.format("filter_do.nvim: failed to copy stub file %s to %s", src_path, new_stub_path)
@@ -334,6 +360,7 @@ function F:exec_filter(ctx, src_path)
     end)
     if res_code == 0 then
       self:_set_range_with_buf_text(ctx, new_buf)
+      self:save_stub_as_record(src_path)
     end
     vim.api.nvim_buf_delete(new_buf, { force = true })
     return res_code
@@ -349,8 +376,43 @@ function F:exec_filter(ctx, src_path)
     if res_code ~= 0 then
       U.msg_err(string.format("filter_do.nvim: %s failed with code %s", self.tpl_name, res_code))
     end
+    if res_code == 0 then
+      self:save_stub_as_record(src_path)
+    end
     return res_code
   end)
+end
+
+---@param stub_path string
+---@return boolean
+function F:save_stub_as_record(stub_path)
+  local stub_checksum = U.file_sha256(stub_path)
+  if not stub_checksum then
+    return false
+  end
+
+  ---@type table<string,filter_do.SnippetHistoryRecord>
+  local checksums = {}
+  local records = self:list_history_records("asc", false)
+  for _, record in ipairs(records) do
+    if record.sha256sum then
+      checksums[record.sha256sum] = record
+    end
+  end
+
+  local res = nil
+  local exist_record = checksums[stub_checksum]
+  local new_record_path = self:_stub_path(RECORD_PREFIX, string.format("%s.%s", stub_checksum, os.time()))
+  if exist_record then
+    res = vim.system({ "mv", exist_record.path, new_record_path }):wait()
+  else
+    res = vim.system({ "cp", stub_path, new_record_path }):wait()
+  end
+  if res.code ~= 0 then
+    local msg = string.format("filter-do.nvim: failed to save snippnet record, %s", res.stderr)
+    U.msg_err(msg)
+  end
+  return res.code == 0
 end
 
 ---@return table<string, filter_do.filter.Filter>
@@ -384,21 +446,34 @@ end
 ---@param tpl_name string
 ---@param order string "asc" | "desc"
 ---@param include_tpl_itself boolean
----@return {path:string, filename:string, timestamp:integer}[]
+---@return filter_do.SnippetHistoryRecord[]
 function F.list_history_by_tpl(tpl_name, order, include_tpl_itself)
   local filter = F.get_filter_by_name(tpl_name)
   if not filter then
     return {}
   end
-  return filter:list_history_stubs(order, include_tpl_itself)
+  return filter:list_history_records(order, include_tpl_itself)
 end
 
 ---@param keep_num integer
-function F.clean_all_stubs(keep_num)
+function F.clean_all_stubs_and_records(keep_num)
   local filters = F.list_filters()
   for _, filter in pairs(filters) do
-    filter:clean_stubs(keep_num)
+    filter:clean_stubs_and_records(keep_num)
   end
+end
+
+---@param record filter_do.SnippetHistoryRecord
+---@return string
+function F.format_snippet_record(record)
+  local display_name = string.format("fx_record.%s", record.tpl_name)
+  local display_checksum = record.sha256sum:sub(1, 10)
+  local time_str = vim.fn.strftime("%Y-%m-%dT%H:%M:%S", record.timestamp)
+  if record.filename == record.tpl_name then
+    display_name = U.short_path(record.path, 2)
+    display_checksum = "[Template]"
+  end
+  return string.format("%s %s %s", time_str, display_checksum, display_name)
 end
 
 return F

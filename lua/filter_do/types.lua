@@ -43,6 +43,7 @@
 ---@field filter_cmd fun(ctx:filter_do.executors.ExecutorCtx):string[]|nil
 
 ---@class filter_do.UserConfig
+---@field filter_records_num? integer
 ---@field executors? table<string, filter_do.executors.ExecutorInfo>
 ---@field tpl_exec? table<string, string|filter_do.executors.ExecutorInfo>
 ---@field get_executor? fun(tpl_name:string):nil|string|filter_do.executors.ExecutorInfo
@@ -56,3 +57,10 @@
 ---@field edit_before_apply fun():boolean
 ---@field get_env fun(buf_range:filter_do.BufRange):filter_do.EnvKv
 ---@field opts filter_do.FxCtxOpts
+
+---@class filter_do.SnippetHistoryRecord
+---@field tpl_name string
+---@field path string
+---@field filename string
+---@field sha256sum string
+---@field timestamp integer
