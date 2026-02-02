@@ -194,7 +194,31 @@ function M:open_scratch_win(ctx)
   self:highlight_buf_range(ctx)
 end
 
+function M:locate_user_code()
+  vim.api.nvim_buf_call(self.scratch_buf_id, function()
+    vim.cmd.edit()
+    vim.cmd("normal! gg0")
+    local rs = vim.fn.search("USER_CODE")
+    if rs == 0 then
+      -- Placeholder replaced by user code snippet, search next placeholder
+      vim.fn.search("user code ended")
+      vim.cmd("normal! {{}k")
+    end
+    vim.cmd("normal! ^")
+  end)
+end
+
+function M:locate_target_win()
+  local buf_range = self.ctx.buf_range
+  vim.api.nvim_win_set_cursor(self.target_win_id, { buf_range.start_row, buf_range.start_col })
+  vim.api.nvim_win_call(self.target_win_id, function()
+    vim.cmd("normal! zt")
+  end)
+end
+
 function M:highlight_buf_range(ctx)
+  self:locate_target_win()
+
   local ns_name = "filter_do.buf_range_hl"
   local ns_id = vim.api.nvim_create_namespace(ns_name)
   vim.api.nvim_buf_clear_namespace(ctx.buf_range.bufnr, ns_id, 0, -1)
@@ -263,17 +287,7 @@ function M:action_history()
       vim.cmd.update()
     end)
     vim.api.nvim_buf_set_name(self.scratch_buf_id, stub_path)
-    vim.api.nvim_buf_call(self.scratch_buf_id, function()
-      vim.cmd.edit()
-      vim.cmd.normal("gg0")
-      local rs = vim.fn.search("USER_CODE")
-      if rs == 0 then
-        -- Placeholder replaced by user code snippet, search next placeholder
-        vim.fn.search("user code ended")
-        vim.cmd.normal("{{}k")
-      end
-      vim.cmd.normal("^")
-    end)
+    self:locate_user_code()
   end)
 end
 
@@ -287,17 +301,7 @@ end
 function M:config_scratch_buf()
   local keymap = Cfg.action_keymaps
 
-  vim.api.nvim_buf_call(self.scratch_buf_id, function()
-    vim.cmd.edit()
-    vim.cmd.normal("gg0")
-    local rs = vim.fn.search("USER_CODE")
-    if rs == 0 then
-      -- Placeholder replaced by user code snippet, search next placeholder
-      vim.fn.search("user code ended")
-      vim.cmd.normal("{{}k")
-    end
-    vim.cmd.normal("^")
-  end)
+  self:locate_user_code()
 
   vim.api.nvim_buf_set_keymap(self.scratch_buf_id, "n", keymap.apply, "", {
     desc = "filter-do: Apply filter",
