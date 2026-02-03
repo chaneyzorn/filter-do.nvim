@@ -1,8 +1,7 @@
 local U = require("filter_do.util")
 local E = require("filter_do.executors")
 
-local RECORD_PREFIX = "fx_record"
-local STUB_PREFIX = string.format("fx_stub_%s", vim.fn.getpid())
+local VIM_PID = tostring(vim.fn.getpid())
 
 ---@class filter_do.filter.Filter
 ---@field tpl_name string
@@ -44,28 +43,32 @@ function F:_load_template_file()
   return self._tpl
 end
 
----@param prefix string
----@param identify string|integer
+---@param identify string
 ---@return string
-function F:_stub_path(prefix, identify)
-  local stub_file_name = string.format("%s.%s.%s", prefix, identify, self.tpl_name)
+function F:_stub_path(identify)
+  -- identify: <timestamp>.<seq>.<pid>
+  -- stub_file: fx_stub.<timestamp>.<seq>.<pid>.<tpl_name>
+  local stub_file_name = string.format("fx_stub.%s.%s", identify, self.tpl_name)
   return vim.fs.joinpath(U.ensure_cache_path("stubs"), stub_file_name)
+end
+
+---@param identify string
+---@return string
+function F:_record_path(identify)
+  -- identify: <timestamp>.<seq>.<sha256sum>
+  -- record_file: fx_record.<timestamp>.<seq>.<sha256sum>.<tpl_name>
+  local record_file_name = string.format("fx_record.%s.%s", identify, self.tpl_name)
+  return vim.fs.joinpath(U.ensure_cache_path("records"), record_file_name)
 end
 
 ---@param current_instance boolean
 ---@return string[]
 function F:list_stub_paths(current_instance)
   if current_instance then
-    return vim.fn.glob(self:_stub_path(STUB_PREFIX, "*"), false, true)
+    return vim.fn.glob(self:_stub_path("*." .. VIM_PID), false, true)
   else
-    local path = vim.fs.joinpath(U.ensure_cache_path("stubs"), string.format("fx_stub*.%s", self.tpl_name))
-    return vim.fn.glob(path, false, true)
+    return vim.fn.glob(self:_stub_path("*"), false, true)
   end
-end
-
----@return string[]
-function F:list_record_paths()
-  return vim.fn.glob(self:_stub_path(RECORD_PREFIX, "*"), false, true)
 end
 
 ---@param order string "asc" | "desc"
@@ -73,10 +76,10 @@ end
 ---@return filter_do.SnippetHistoryRecord[]
 function F:list_history_records(order, include_tpl_itself)
   local res = {}
-  local stub_paths = self:list_record_paths()
-  for _, path in ipairs(stub_paths) do
+  local record_paths = vim.fn.glob(self:_record_path("*"), false, true)
+  for _, path in ipairs(record_paths) do
     local filename = vim.fs.basename(path)
-    local sha256sum, timestamp_str = string.match(filename, "^fx_record%.(.-)%.(.-)%..+")
+    local timestamp_str, _, sha256sum = string.match(filename, "^fx_record%.(.-)%.(.-)%.(.-)%..+")
     if timestamp_str then
       local timestamp = tonumber(timestamp_str)
       if timestamp then
@@ -120,30 +123,22 @@ function F:clean_stubs_and_records(keep_num)
   end
 
   -- clean history records
-  local record_paths = self:list_record_paths()
-  if #record_paths <= keep_num then
+  local records = self:list_history_records("asc", false)
+  if #records <= keep_num then
     return
   end
-  -- sort by filename ascendingly to remove old stubs first
-  table.sort(record_paths, function(a, b)
-    return a < b
-  end)
-  for i = 1, #record_paths - keep_num do
-    os.remove(record_paths[i])
+  for i = 1, #records - keep_num do
+    os.remove(records[i].path)
   end
 end
 
 ---@return string|nil
-function F:_get_last_stub()
-  local stub_paths = self:list_record_paths()
-  if #stub_paths == 0 then
+function F:_get_last_record_path()
+  local records = self:list_history_records("desc", false)
+  if #records == 0 then
     return nil
   end
-  -- sort by filename descendingly to get the last used stub
-  table.sort(stub_paths, function(a, b)
-    return a > b
-  end)
-  return stub_paths[1]
+  return records[1].path
 end
 
 ---@param code_snip string|nil
@@ -154,7 +149,7 @@ function F:gen_stub_by_code_snip(code_snip)
     return nil
   end
 
-  local stub_path = self:_stub_path(STUB_PREFIX, os.time())
+  local stub_path = self:_stub_path(U.time_seq(VIM_PID))
   local f, err = io.open(stub_path, "w")
   if f == nil then
     local err_msg = string.format("filter_do.nvim: %s", err)
@@ -178,18 +173,18 @@ end
 
 ---@return string|nil
 function F:gen_stub_by_last_used()
-  local last_stub = self:_get_last_stub()
-  if not last_stub then
+  local last_record_path = self:_get_last_record_path()
+  if not last_record_path then
     local err_msg = string.format("filter_do.nvim: no previous code found for filter %s", self.tpl_name)
     U.msg_err(err_msg)
     return nil
   end
 
-  -- rename the last used stub to a new one with current timestamp
-  local new_stub_path = self:_stub_path(STUB_PREFIX, os.time())
-  local cp_res = vim.system({ "cp", last_stub, new_stub_path }):wait()
+  -- copy the last used record to a new one with current timestamp
+  local new_stub_path = self:_stub_path(U.time_seq(VIM_PID))
+  local cp_res = vim.system({ "cp", last_record_path, new_stub_path }):wait()
   if cp_res.code ~= 0 then
-    local err_msg = string.format("filter_do.nvim: failed to copy stub file %s to %s", last_stub, new_stub_path)
+    local err_msg = string.format("filter_do.nvim: failed to copy stub file %s to %s", last_record_path, new_stub_path)
     U.msg_err(err_msg)
     return nil
   end
@@ -205,7 +200,7 @@ function F:gen_stub_by_exist_file(exist_path)
     return nil
   end
 
-  local new_stub_path = self:_stub_path(STUB_PREFIX, os.time())
+  local new_stub_path = self:_stub_path(U.time_seq(VIM_PID))
   local cp_res = vim.system({ "cp", exist_path, new_stub_path }):wait()
   if cp_res.code ~= 0 then
     local err_msg = string.format("filter_do.nvim: failed to copy stub file %s to %s", exist_path, new_stub_path)
@@ -215,10 +210,10 @@ function F:gen_stub_by_exist_file(exist_path)
   return new_stub_path
 end
 
----@param func fun(filter_do.filter.Filter):string
+---@param func fun(filter_do.filter.Filter):(string,boolean)
 ---@return string|nil
 function F:gen_stub_by_dynamic_func(func)
-  local stub_path = func(self)
+  local stub_path, keep = func(self)
   if not stub_path or #stub_path == 0 then
     local err_msg = string.format("filter_do.nvim: dynamic func returned empty path for filter %s", self.tpl_name)
     U.msg_err(err_msg)
@@ -229,7 +224,17 @@ function F:gen_stub_by_dynamic_func(func)
     U.msg_err(err_msg)
     return nil
   end
-  return stub_path
+  local new_stub_path = self:_stub_path(U.time_seq(VIM_PID))
+  local cp_res = vim.system({ "cp", stub_path, new_stub_path }):wait()
+  if cp_res.code ~= 0 then
+    local err_msg = string.format("filter_do.nvim: failed to copy stub file %s to %s", stub_path, new_stub_path)
+    U.msg_err(err_msg)
+    return nil
+  end
+  if not keep then
+    os.remove(stub_path)
+  end
+  return new_stub_path
 end
 
 ---@param code_snip_spec filter_do.CodeSnipSpec
@@ -248,7 +253,7 @@ function F:gen_stub_by_spec(code_snip_spec)
     ---@cast value string
     stub_path = self:gen_stub_by_exist_file(value)
   elseif code_snip_spec.type == "dynamic_func" then
-    ---@cast value fun(filter_do.filter.Filter):string
+    ---@cast value fun(filter_do.filter.Filter):(string,boolean)
     stub_path = self:gen_stub_by_dynamic_func(value)
   else
     local err_msg = string.format("filter_do.nvim: unknown code snip spec type %s", code_snip_spec.type)
@@ -427,7 +432,7 @@ function F:save_stub_as_record(stub_path)
 
   local res = nil
   local exist_record = checksums[stub_checksum]
-  local new_record_path = self:_stub_path(RECORD_PREFIX, string.format("%s.%s", stub_checksum, os.time()))
+  local new_record_path = self:_record_path(U.time_seq(stub_checksum))
   if exist_record then
     res = vim.system({ "mv", exist_record.path, new_record_path }):wait()
   else

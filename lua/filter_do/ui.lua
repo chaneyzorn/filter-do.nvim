@@ -158,7 +158,7 @@ function M:_create_backdrop()
   })
   vim.api.nvim_set_hl(0, "FxBackdrop", { bg = "#000000", default = true })
   vim.api.nvim_set_option_value("winhighlight", "Normal:FxBackdrop", { scope = "local", win = self.backdrop_win })
-  vim.api.nvim_set_option_value("winblend", 60, { scope = "local", win = self.backdrop_win })
+  vim.api.nvim_set_option_value("winblend", 45, { scope = "local", win = self.backdrop_win })
   vim.bo[self.backdrop_buf].buftype = "nofile"
   vim.bo[self.backdrop_buf].filetype = "fx_backdrop"
 end

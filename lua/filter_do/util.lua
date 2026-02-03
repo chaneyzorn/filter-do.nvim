@@ -147,6 +147,16 @@ function U.file_sha256(path)
   return hash
 end
 
+local _seq = 0
+
+---@param suffix string
+---@return string
+function U.time_seq(suffix)
+  _seq = _seq + 1
+  local timestamp = os.time()
+  return string.format("%s.%s.%s", timestamp, _seq, suffix)
+end
+
 ---@param pattern string
 ---@param data? table
 function U.trigger_user_cmd(pattern, data)

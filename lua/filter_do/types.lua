@@ -23,7 +23,7 @@
 ---| "use_last_code" # value: nil (use the last used code snippet)
 ---| "exist_path" # value: string (the path to the code snippet file)
 ---| "dynamic_func" # value: fun():string (a function that return filter source file path)
----@field value nil | string | fun(filter_do.filter.Filter): string
+---@field value nil | string | fun(filter_do.filter.Filter):(path:string,keep:boolean)
 
 ---@class filter_do.FxCtx
 ---@field buf_range filter_do.BufRange
