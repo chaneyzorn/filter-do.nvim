@@ -216,6 +216,7 @@ function M:locate_target_win()
   end)
 end
 
+---@param ctx filter_do.FxCtx
 function M:highlight_buf_range(ctx)
   self:locate_target_win()
 
@@ -229,13 +230,14 @@ function M:highlight_buf_range(ctx)
     { ctx.buf_range.start_row - 1, ctx.buf_range.start_col - 1 },
     { ctx.buf_range.end_row - 1, ctx.buf_range.end_col - 1 },
     {
-      regtype = ctx.v_char_wised and "v" or "V",
+      regtype = ctx.buf_range.v_char_wised and "v" or "V",
       inclusive = true,
       priority = 1000,
     }
   )
 end
 
+---@param ctx filter_do.FxCtx
 function M:clear_buf_range_highlight(ctx)
   local ns_name = "filter_do.buf_range_hl"
   local ns_id = vim.api.nvim_create_namespace(ns_name)
