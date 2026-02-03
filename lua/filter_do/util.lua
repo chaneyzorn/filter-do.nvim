@@ -147,4 +147,11 @@ function U.file_sha256(path)
   return hash
 end
 
+---@param pattern string
+---@param data? table
+function U.trigger_user_cmd(pattern, data)
+  data = data or {}
+  vim.api.nvim_exec_autocmds("User", { pattern = "Fx" .. pattern, data = data })
+end
+
 return U

@@ -10,6 +10,6 @@ return {
       vim.notify(err_msg, vim.log.levels.ERROR)
       return nil
     end
-    return { node, ctx.src_path }
+    return { node, ctx.stub_path }
   end,
 }

@@ -10,6 +10,6 @@ return {
       vim.notify(err_msg, vim.log.levels.ERROR)
       return nil
     end
-    return { py3, ctx.src_path }
+    return { py3, ctx.stub_path }
   end,
 }

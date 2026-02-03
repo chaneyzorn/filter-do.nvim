@@ -196,19 +196,19 @@ function F:gen_stub_by_last_used()
   return new_stub_path
 end
 
----@param src_path string
+---@param exist_path string
 ---@return string|nil
-function F:gen_stub_by_exist_file(src_path)
-  if vim.uv.fs_stat(src_path) == nil then
-    local err_msg = string.format("filter_do.nvim: source file %s does not exist", src_path)
+function F:gen_stub_by_exist_file(exist_path)
+  if vim.uv.fs_stat(exist_path) == nil then
+    local err_msg = string.format("filter_do.nvim: source file %s does not exist", exist_path)
     U.msg_err(err_msg)
     return nil
   end
 
   local new_stub_path = self:_stub_path(STUB_PREFIX, os.time())
-  local cp_res = vim.system({ "cp", src_path, new_stub_path }):wait()
+  local cp_res = vim.system({ "cp", exist_path, new_stub_path }):wait()
   if cp_res.code ~= 0 then
-    local err_msg = string.format("filter_do.nvim: failed to copy stub file %s to %s", src_path, new_stub_path)
+    local err_msg = string.format("filter_do.nvim: failed to copy stub file %s to %s", exist_path, new_stub_path)
     U.msg_err(err_msg)
     return nil
   end
@@ -218,40 +218,49 @@ end
 ---@param func fun(filter_do.filter.Filter):string
 ---@return string|nil
 function F:gen_stub_by_dynamic_func(func)
-  local src_path = func(self)
-  if not src_path or #src_path == 0 then
+  local stub_path = func(self)
+  if not stub_path or #stub_path == 0 then
     local err_msg = string.format("filter_do.nvim: dynamic func returned empty path for filter %s", self.tpl_name)
     U.msg_err(err_msg)
     return nil
   end
-  if vim.uv.fs_stat(src_path) == nil then
-    local err_msg = string.format("filter_do.nvim: source file %s does not exist", src_path)
+  if vim.uv.fs_stat(stub_path) == nil then
+    local err_msg = string.format("filter_do.nvim: source file %s does not exist", stub_path)
     U.msg_err(err_msg)
     return nil
   end
-  return src_path
+  return stub_path
 end
 
 ---@param code_snip_spec filter_do.CodeSnipSpec
 ---@return string|nil
 function F:gen_stub_by_spec(code_snip_spec)
+  U.trigger_user_cmd("GenStubPre", { spec = code_snip_spec })
+
+  local stub_path = nil
   local value = code_snip_spec.value
   if code_snip_spec.type == "code_snip" then
     ---@cast value string
-    return self:gen_stub_by_code_snip(value)
+    stub_path = self:gen_stub_by_code_snip(value)
   elseif code_snip_spec.type == "use_last_code" then
-    return self:gen_stub_by_last_used()
+    stub_path = self:gen_stub_by_last_used()
   elseif code_snip_spec.type == "exist_path" then
     ---@cast value string
-    return self:gen_stub_by_exist_file(value)
+    stub_path = self:gen_stub_by_exist_file(value)
   elseif code_snip_spec.type == "dynamic_func" then
     ---@cast value fun(filter_do.filter.Filter):string
-    return self:gen_stub_by_dynamic_func(value)
+    stub_path = self:gen_stub_by_dynamic_func(value)
   else
     local err_msg = string.format("filter_do.nvim: unknown code snip spec type %s", code_snip_spec.type)
     U.msg_err(err_msg)
-    return nil
+    stub_path = nil
   end
+
+  U.trigger_user_cmd("GenStubPost", {
+    spec = code_snip_spec,
+    stub_path = stub_path,
+  })
+  return stub_path
 end
 
 ---@param ctx filter_do.FxCtx
@@ -307,9 +316,11 @@ function F:_set_range_with_buf_text(ctx, src_buf)
 end
 
 ---@param ctx filter_do.FxCtx
----@param src_path string|nil not gen stub file if specified
+---@param stub_path string|nil not gen stub file if specified
 ---@return integer|nil
-function F:exec_filter(ctx, src_path)
+function F:exec_filter(ctx, stub_path)
+  U.trigger_user_cmd("ExecPre", { ctx = ctx })
+
   local modifiable = vim.api.nvim_get_option_value("modifiable", { buf = ctx.buf_range.bufnr })
   local readonly = vim.api.nvim_get_option_value("readonly", { buf = ctx.buf_range.bufnr })
   if readonly or not modifiable then
@@ -318,15 +329,15 @@ function F:exec_filter(ctx, src_path)
     return
   end
 
-  if src_path == nil then
-    src_path = self:gen_stub_by_spec(ctx.code_snip_spec)
+  if stub_path == nil then
+    stub_path = self:gen_stub_by_spec(ctx.code_snip_spec)
   end
-  if not src_path then
+  if not (stub_path and vim.uv.fs_stat(stub_path)) then
     return
   end
 
   local executor_ctx = self.executor.pre_action({
-    src_path = src_path,
+    stub_path = stub_path,
     fx_ctx = vim.deepcopy(ctx),
     env = vim.deepcopy(ctx.env),
     user_data = {},
@@ -360,9 +371,15 @@ function F:exec_filter(ctx, src_path)
     end)
     if res_code == 0 then
       self:_set_range_with_buf_text(ctx, new_buf)
-      self:save_stub_as_record(src_path)
+      self:save_stub_as_record(stub_path)
     end
     vim.api.nvim_buf_delete(new_buf, { force = true })
+
+    U.trigger_user_cmd("ExecPost", {
+      executor_ctx = executor_ctx,
+      filter_cmd = filter_cmd,
+      shell_code = res_code,
+    })
     return res_code
   end
 
@@ -377,8 +394,14 @@ function F:exec_filter(ctx, src_path)
       U.msg_err(string.format("filter_do.nvim: %s failed with code %s", self.tpl_name, res_code))
     end
     if res_code == 0 then
-      self:save_stub_as_record(src_path)
+      self:save_stub_as_record(stub_path)
     end
+
+    U.trigger_user_cmd("ExecPost", {
+      executor_ctx = executor_ctx,
+      filter_cmd = filter_cmd,
+      shell_code = res_code,
+    })
     return res_code
   end)
 end
@@ -386,6 +409,8 @@ end
 ---@param stub_path string
 ---@return boolean
 function F:save_stub_as_record(stub_path)
+  U.trigger_user_cmd("SaveHistoryPre", { stub_path = stub_path })
+
   local stub_checksum = U.file_sha256(stub_path)
   if not stub_checksum then
     return false
@@ -412,6 +437,13 @@ function F:save_stub_as_record(stub_path)
     local msg = string.format("filter-do.nvim: failed to save snippnet record, %s", res.stderr)
     U.msg_err(msg)
   end
+
+  U.trigger_user_cmd("SaveHistoryPost", {
+    stub_path = stub_path,
+    exist_record = exist_record and exist_record.path,
+    new_record = new_record_path,
+    checksum = stub_checksum,
+  })
   return res.code == 0
 end
 

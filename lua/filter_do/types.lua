@@ -35,8 +35,8 @@
 ---@class filter_do.executors.ExecutorCtx
 ---@field fx_ctx filter_do.FxCtx a copy of the original FxCtx, should be readonly
 ---@field env filter_do.EnvKv contains envs from fx_ctx.env, can be modified
----@field src_path string
----@field user_data any
+---@field stub_path string
+---@field user_data table
 
 ---@class filter_do.executors.ExecutorInfo
 ---@field pre_action fun(ctx:filter_do.executors.ExecutorCtx):filter_do.executors.ExecutorCtx|nil
@@ -68,3 +68,11 @@
 ---@field filename string
 ---@field sha256sum string
 ---@field timestamp integer
+
+---@class filter_do.UIEventData
+---@field ctx filter_do.FxCtx
+---@field stub_path? string
+---@field target_win_id? integer
+---@field scratch_win_id? integer
+---@field scratch_buf_id? integer
+---@field preview_buf_id? integer
