@@ -48,6 +48,7 @@
 ---@field executors table<string, filter_do.executors.ExecutorInfo>
 ---@field tpl_exec table<string, string|filter_do.executors.ExecutorInfo>
 ---@field get_executor? fun(tpl_name:string):nil|string|filter_do.executors.ExecutorInfo
+---@field winborder 'none'|'single'|'double'|'rounded'|'solid'|'shadow'|string[]
 ---@field action_keymaps table<string,string>
 
 ---@class (partial) filter_do.UserConfig: filter_do.Config

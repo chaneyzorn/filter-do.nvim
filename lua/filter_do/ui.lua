@@ -132,6 +132,7 @@ end
 ---@return filter_do.UIEventData
 function M:_event_data()
   return {
+    ui = self,
     ctx = self.ctx,
     stub_path = self.stub_path,
     target_win_id = self.target_win_id,
@@ -139,6 +140,27 @@ function M:_event_data()
     scratch_buf_id = self.scratch_buf_id,
     preview_buf_id = self.preview_buf_id,
   }
+end
+
+function M:_create_backdrop()
+  -- credit to lazy.nvim, Apache-2.0 license
+  self.backdrop_buf = vim.api.nvim_create_buf(false, true)
+  self.backdrop_win = vim.api.nvim_open_win(self.backdrop_buf, false, {
+    relative = "editor",
+    border = "none",
+    width = vim.o.columns,
+    height = vim.o.lines,
+    row = 0,
+    col = 0,
+    style = "minimal",
+    focusable = false,
+    zindex = 30,
+  })
+  vim.api.nvim_set_hl(0, "FxBackdrop", { bg = "#000000", default = true })
+  vim.api.nvim_set_option_value("winhighlight", "Normal:FxBackdrop", { scope = "local", win = self.backdrop_win })
+  vim.api.nvim_set_option_value("winblend", 60, { scope = "local", win = self.backdrop_win })
+  vim.bo[self.backdrop_buf].buftype = "nofile"
+  vim.bo[self.backdrop_buf].filetype = "fx_backdrop"
 end
 
 ---@param ctx filter_do.FxCtx
@@ -175,7 +197,7 @@ function M:open_scratch_win(ctx)
   local win_width = math.floor((vim.o.columns * 0.9) * 0.5)
   local target_win_id = vim.api.nvim_open_win(ctx.buf_range.bufnr, false, {
     relative = "editor",
-    border = "rounded",
+    border = Cfg.winborder,
     row = math.floor(vim.o.lines * 0.1) - 1,
     col = math.floor(vim.o.columns * 0.05),
     width = win_width - 1,
@@ -191,7 +213,7 @@ function M:open_scratch_win(ctx)
 
   local scratch_win_id = vim.api.nvim_open_win(scratch_buf_id, true, {
     relative = "editor",
-    border = "rounded",
+    border = Cfg.winborder,
     row = math.floor(vim.o.lines * 0.1) - 1,
     col = math.floor(vim.o.columns * 0.05) + win_width + 1,
     width = win_width - 1,
@@ -203,14 +225,15 @@ function M:open_scratch_win(ctx)
   })
   self.scratch_win_id = scratch_win_id
 
-  self:config_scratch_buf()
-  self:config_float_win()
-  self:highlight_buf_range(ctx)
+  self:_config_scratch_buf()
+  self:_config_float_win()
+  self:_create_backdrop()
+  self:highlight_buf_range(ctx.buf_range)
 
   U.trigger_user_cmd("OpenPost", self:_event_data())
 end
 
-function M:locate_user_code()
+function M:_locate_user_code()
   vim.api.nvim_buf_call(self.scratch_buf_id, function()
     vim.cmd.edit()
     vim.cmd("normal! gg0")
@@ -224,7 +247,7 @@ function M:locate_user_code()
   end)
 end
 
-function M:locate_target_win()
+function M:_locate_target_win()
   local buf_range = self.ctx.buf_range
   vim.api.nvim_win_set_cursor(self.target_win_id, { buf_range.start_row, buf_range.start_col })
   vim.api.nvim_win_call(self.target_win_id, function()
@@ -232,32 +255,32 @@ function M:locate_target_win()
   end)
 end
 
----@param ctx filter_do.FxCtx
-function M:highlight_buf_range(ctx)
-  self:locate_target_win()
+---@param buf_range filter_do.BufRange
+function M:highlight_buf_range(buf_range)
+  self:_locate_target_win()
 
   local ns_name = "filter_do.buf_range_hl"
   local ns_id = vim.api.nvim_create_namespace(ns_name)
-  vim.api.nvim_buf_clear_namespace(ctx.buf_range.bufnr, ns_id, 0, -1)
+  vim.api.nvim_buf_clear_namespace(buf_range.bufnr, ns_id, 0, -1)
   vim.hl.range(
-    ctx.buf_range.bufnr,
+    buf_range.bufnr,
     ns_id,
     "Visual",
-    { ctx.buf_range.start_row - 1, ctx.buf_range.start_col - 1 },
-    { ctx.buf_range.end_row - 1, ctx.buf_range.end_col - 1 },
+    { buf_range.start_row - 1, buf_range.start_col - 1 },
+    { buf_range.end_row - 1, buf_range.end_col - 1 },
     {
-      regtype = ctx.buf_range.v_char_wised and "v" or "V",
+      regtype = buf_range.v_char_wised and "v" or "V",
       inclusive = true,
       priority = 1000,
     }
   )
 end
 
----@param ctx filter_do.FxCtx
-function M:clear_buf_range_highlight(ctx)
+---@param buf_range filter_do.BufRange
+function M:clear_buf_range_highlight(buf_range)
   local ns_name = "filter_do.buf_range_hl"
   local ns_id = vim.api.nvim_create_namespace(ns_name)
-  vim.api.nvim_buf_clear_namespace(ctx.buf_range.bufnr, ns_id, 0, -1)
+  vim.api.nvim_buf_clear_namespace(buf_range.bufnr, ns_id, 0, -1)
 end
 
 function M:action_apply()
@@ -284,7 +307,7 @@ function M:action_apply()
   vim.api.nvim_win_set_config(self.scratch_win_id, {
     footer = gen_scratch_footer(self.target_buf_undo_seq),
   })
-  self:clear_buf_range_highlight(self.ctx)
+  self:clear_buf_range_highlight(self.ctx.buf_range)
 
   U.trigger_user_cmd("ApplyPost", self:_event_data())
 end
@@ -304,7 +327,7 @@ function M:action_undo()
   vim.api.nvim_win_set_config(self.scratch_win_id, {
     footer = gen_scratch_footer(self.target_buf_undo_seq),
   })
-  self:highlight_buf_range(self.ctx)
+  self:highlight_buf_range(self.ctx.buf_range)
 
   U.trigger_user_cmd("UndoPost", self:_event_data())
 end
@@ -331,7 +354,7 @@ function M:action_history()
       vim.cmd.update()
     end)
     vim.api.nvim_buf_set_name(self.scratch_buf_id, stub_path)
-    self:locate_user_code()
+    self:_locate_user_code()
   end)
 
   U.trigger_user_cmd("HistoryPost", self:_event_data())
@@ -348,9 +371,9 @@ function M:action_close()
   U.trigger_user_cmd("ClosePost", self:_event_data())
 end
 
-function M:config_scratch_buf()
+function M:_config_scratch_buf()
   local keymap = Cfg.action_keymaps
-  self:locate_user_code()
+  self:_locate_user_code()
   vim.api.nvim_buf_set_keymap(self.scratch_buf_id, "n", keymap.apply, "", {
     desc = "filter-do: Apply filter",
     callback = function()
@@ -383,26 +406,29 @@ function M:config_scratch_buf()
   })
 end
 
-function M:config_float_win()
+function M:_config_float_win()
   local callback_fn = function()
-    self:clear_buf_range_highlight(self.ctx)
-    if vim.api.nvim_win_is_valid(self.target_win_id) then
-      vim.api.nvim_win_close(self.target_win_id, true)
+    self:clear_buf_range_highlight(self.ctx.buf_range)
+
+    local wins = { self.target_win_id, self.scratch_win_id, self.backdrop_win }
+    local bufs = { self.scratch_buf_id, self.preview_buf_id, self.backdrop_buf }
+    for _, win_id in ipairs(wins) do
+      if win_id and vim.api.nvim_win_is_valid(win_id) then
+        vim.api.nvim_win_close(win_id, true)
+      end
     end
-    if vim.api.nvim_win_is_valid(self.scratch_win_id) then
-      vim.api.nvim_win_close(self.scratch_win_id, true)
+    for _, buf_id in ipairs(bufs) do
+      if buf_id and vim.api.nvim_buf_is_valid(buf_id) then
+        vim.api.nvim_buf_delete(buf_id, { force = true })
+      end
     end
-    if vim.api.nvim_buf_is_valid(self.scratch_buf_id) then
-      vim.api.nvim_buf_delete(self.scratch_buf_id, { force = true })
-    end
-    if self.preview_buf_id and vim.api.nvim_buf_is_valid(self.preview_buf_id) then
-      vim.api.nvim_buf_delete(self.preview_buf_id, { force = true })
-    end
+
     -- restore previous window
     if vim.api.nvim_win_is_valid(self.prev_win_id) then
       vim.api.nvim_set_current_win(self.prev_win_id)
     end
   end
+
   vim.api.nvim_create_autocmd("WinClosed", {
     pattern = tostring(self.scratch_win_id),
     callback = callback_fn,
@@ -452,8 +478,8 @@ function M:action_preview_diff()
     ),
     footer = gen_preview_footer(),
   })
-  self:config_preview_buf()
-  self:clear_buf_range_highlight(self.ctx)
+  self:_config_preview_buf()
+  self:clear_buf_range_highlight(self.ctx.buf_range)
 
   -- clear all diff related options in all wins in the current tabpage
   vim.cmd.diffoff({ bang = true })
@@ -473,7 +499,7 @@ function M:action_back()
 
   -- clear all diff related options in all wins in the current tabpage
   vim.cmd.diffoff({ bang = true })
-  self:highlight_buf_range(self.ctx)
+  self:highlight_buf_range(self.ctx.buf_range)
 
   vim.api.nvim_win_set_buf(self.scratch_win_id, self.scratch_buf_id)
   vim.api.nvim_buf_delete(self.preview_buf_id, { force = true })
@@ -489,7 +515,7 @@ function M:action_back()
   U.trigger_user_cmd("BackPost", self:_event_data())
 end
 
-function M:config_preview_buf()
+function M:_config_preview_buf()
   local keymap = Cfg.action_keymaps
   vim.api.nvim_buf_set_keymap(self.preview_buf_id, "n", keymap.apply, "", {
     desc = "filter-do: Apply filter",

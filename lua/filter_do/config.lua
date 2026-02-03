@@ -7,6 +7,7 @@ local defaults = {
   executors = {},
   tpl_exec = {},
   get_executor = nil,
+  winborder = "rounded",
   action_keymaps = {
     apply = "<LocalLeader>a",
     undo = "<LocalLeader>u",
