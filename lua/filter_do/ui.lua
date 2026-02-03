@@ -129,6 +129,20 @@ local function gen_title(title, hi_group)
   }
 end
 
+---@param win_id integer
+---@param fn fun():any
+local function with_winfixbuf_disabled(win_id, fn)
+  if not vim.api.nvim_win_is_valid(win_id) then
+    fn()
+  end
+
+  local winfuxbuf = vim.api.nvim_get_option_value("winfixbuf", { win = win_id })
+  vim.api.nvim_set_option_value("winfixbuf", false, { scope = "local", win = win_id })
+  local res = fn()
+  vim.api.nvim_set_option_value("winfixbuf", winfuxbuf, { scope = "local", win = win_id })
+  return res
+end
+
 ---@return filter_do.UIEventData
 function M:_event_data()
   return {
@@ -439,8 +453,10 @@ function M:_config_float_win()
     callback = callback_fn,
     once = true,
   })
-  vim.api.nvim_set_option_value("foldmethod", "marker", { win = self.scratch_win_id })
-  vim.api.nvim_set_option_value("foldlevel", 0, { win = self.scratch_win_id })
+  vim.api.nvim_set_option_value("winfixbuf", true, { scope = "local", win = self.target_win_id })
+  vim.api.nvim_set_option_value("winfixbuf", true, { scope = "local", win = self.scratch_win_id })
+  vim.api.nvim_set_option_value("foldmethod", "marker", { scope = "local", win = self.scratch_win_id })
+  vim.api.nvim_set_option_value("foldlevel", 0, { scope = "local", win = self.scratch_win_id })
 end
 
 function M:action_preview_diff()
@@ -471,7 +487,9 @@ function M:action_preview_diff()
   preview_ctx.buf_range.bufnr = preview_buf
   self.filter:exec_filter(preview_ctx, self.stub_path)
 
-  vim.api.nvim_win_set_buf(self.scratch_win_id, preview_buf)
+  with_winfixbuf_disabled(self.scratch_win_id, function()
+    vim.api.nvim_win_set_buf(self.scratch_win_id, preview_buf)
+  end)
   vim.api.nvim_win_set_config(self.scratch_win_id, {
     title = gen_title(
       string.format("Preview: %s (filter-do: %s)", U.buf_short_name(self.ctx.buf_range.bufnr), self.ctx.tpl_name)
@@ -501,7 +519,9 @@ function M:action_back()
   vim.cmd.diffoff({ bang = true })
   self:highlight_buf_range(self.ctx.buf_range)
 
-  vim.api.nvim_win_set_buf(self.scratch_win_id, self.scratch_buf_id)
+  with_winfixbuf_disabled(self.scratch_win_id, function()
+    vim.api.nvim_win_set_buf(self.scratch_win_id, self.scratch_buf_id)
+  end)
   vim.api.nvim_buf_delete(self.preview_buf_id, { force = true })
   self.preview_buf_id = nil
 
@@ -509,8 +529,8 @@ function M:action_back()
     title = gen_title(string.format("filter-do: %s", self.ctx.tpl_name)),
     footer = gen_scratch_footer(self.target_buf_undo_seq),
   })
-  vim.api.nvim_set_option_value("foldmethod", "marker", { win = self.scratch_win_id })
-  vim.api.nvim_set_option_value("foldlevel", 0, { win = self.scratch_win_id })
+  vim.api.nvim_set_option_value("foldmethod", "marker", { scope = "local", win = self.scratch_win_id })
+  vim.api.nvim_set_option_value("foldlevel", 0, { scope = "local", win = self.scratch_win_id })
 
   U.trigger_user_cmd("BackPost", self:_event_data())
 end
