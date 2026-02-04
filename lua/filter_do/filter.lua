@@ -334,7 +334,8 @@ function F:exec_filter(ctx, stub_path)
     return
   end
 
-  if stub_path == nil then
+  local orphan_stub = stub_path == nil
+  if orphan_stub then
     stub_path = self:gen_stub_by_spec(ctx.code_snip_spec)
   end
   if not (stub_path and vim.uv.fs_stat(stub_path)) then
@@ -385,6 +386,9 @@ function F:exec_filter(ctx, stub_path)
       filter_cmd = filter_cmd,
       shell_code = res_code,
     })
+    if orphan_stub then
+      os.remove(stub_path)
+    end
     return res_code
   end
 
@@ -407,6 +411,9 @@ function F:exec_filter(ctx, stub_path)
       filter_cmd = filter_cmd,
       shell_code = res_code,
     })
+    if orphan_stub then
+      os.remove(stub_path)
+    end
     return res_code
   end)
 end

@@ -362,13 +362,17 @@ function M:action_history()
     if not stub_path then
       return
     end
-    self.stub_path = stub_path
+
     -- update buffer content
     vim.api.nvim_buf_call(self.scratch_buf_id, function()
       vim.cmd.update()
     end)
     vim.api.nvim_buf_set_name(self.scratch_buf_id, stub_path)
     self:_locate_user_code()
+
+    local origin_stub = self.stub_path
+    self.stub_path = stub_path
+    os.remove(origin_stub)
   end)
 
   U.trigger_user_cmd("HistoryPost", self:_event_data())
@@ -437,6 +441,7 @@ function M:_config_float_win()
       end
     end
 
+    os.remove(self.stub_path)
     -- restore previous window
     if vim.api.nvim_win_is_valid(self.prev_win_id) then
       vim.api.nvim_set_current_win(self.prev_win_id)
