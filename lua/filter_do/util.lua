@@ -65,11 +65,13 @@ end
 function U.get_current_buffer_range()
   local mode = vim.fn.mode()
   local bufnr = vim.api.nvim_get_current_buf()
+  local undotree_seq = vim.fn.undotree(bufnr).seq_cur
 
   ---@type filter_do.BufRange
   local buf_range = {
     bufnr = bufnr,
     v_char_wised = false,
+    undotree_seq = undotree_seq,
     start_row = 1,
     end_row = vim.api.nvim_buf_line_count(bufnr),
     start_col = 1,
@@ -81,6 +83,7 @@ function U.get_current_buffer_range()
     buf_range = {
       bufnr = bufnr,
       v_char_wised = true,
+      undotree_seq = undotree_seq,
       start_row = lnum1,
       end_row = lnum2,
       start_col = col1,
@@ -93,6 +96,7 @@ function U.get_current_buffer_range()
     buf_range = {
       bufnr = bufnr,
       v_char_wised = false,
+      undotree_seq = undotree_seq,
       start_row = lnum1,
       end_row = lnum2,
       start_col = 1,

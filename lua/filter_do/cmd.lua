@@ -6,11 +6,13 @@ local U = require("filter_do.util")
 ---@return filter_do.BufRange
 local function get_buf_range_from_cmd(user_cmd)
   local bufnr = vim.api.nvim_get_current_buf()
+  local undotree_seq = vim.fn.undotree(bufnr).seq_cur
 
   ---@type filter_do.BufRange
   local buf_range = {
     bufnr = bufnr,
     v_char_wised = false,
+    undotree_seq = undotree_seq,
     start_row = user_cmd.line1,
     end_row = user_cmd.line2,
     start_col = 1,
@@ -27,6 +29,7 @@ local function get_buf_range_from_cmd(user_cmd)
       buf_range = {
         bufnr = bufnr,
         v_char_wised = true,
+        undotree_seq = undotree_seq,
         start_row = user_cmd.line1,
         end_row = user_cmd.line2,
         -- (1-based lines, 1-based columns)

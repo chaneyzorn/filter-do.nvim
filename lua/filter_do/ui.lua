@@ -150,27 +150,6 @@ function M:_event_data()
   }
 end
 
-function M:_create_backdrop()
-  -- credit to lazy.nvim, Apache-2.0 license
-  self.backdrop_buf = vim.api.nvim_create_buf(false, true)
-  self.backdrop_win = vim.api.nvim_open_win(self.backdrop_buf, false, {
-    relative = "editor",
-    border = "none",
-    width = vim.o.columns,
-    height = vim.o.lines,
-    row = 0,
-    col = 0,
-    style = "minimal",
-    focusable = false,
-    zindex = 30,
-  })
-  vim.api.nvim_set_hl(0, "FxBackdrop", { bg = "#000000", default = true })
-  vim.api.nvim_set_option_value("winhighlight", "Normal:FxBackdrop", { scope = "local", win = self.backdrop_win })
-  vim.api.nvim_set_option_value("winblend", 45, { scope = "local", win = self.backdrop_win })
-  vim.bo[self.backdrop_buf].buftype = "nofile"
-  vim.bo[self.backdrop_buf].filetype = "fx_backdrop"
-end
-
 ---@param ctx filter_do.FxCtx
 function M:open_scratch_win(ctx)
   U.trigger_user_cmd("OpenPre", self:_event_data())
@@ -216,7 +195,6 @@ function M:open_scratch_win(ctx)
     footer_pos = "center",
   })
   self.target_win_id = target_win_id
-  self.target_buf_init_undo_seq = vim.fn.undotree(ctx.buf_range.bufnr).seq_cur
   self.target_buf_undo_seq = nil
 
   local scratch_win_id = vim.api.nvim_open_win(scratch_buf_id, true, {
@@ -239,6 +217,27 @@ function M:open_scratch_win(ctx)
   self:highlight_buf_range(ctx.buf_range)
 
   U.trigger_user_cmd("OpenPost", self:_event_data())
+end
+
+function M:_create_backdrop()
+  -- credit to lazy.nvim, Apache-2.0 license
+  self.backdrop_buf = vim.api.nvim_create_buf(false, true)
+  self.backdrop_win = vim.api.nvim_open_win(self.backdrop_buf, false, {
+    relative = "editor",
+    border = "none",
+    width = vim.o.columns,
+    height = vim.o.lines,
+    row = 0,
+    col = 0,
+    style = "minimal",
+    focusable = false,
+    zindex = 30,
+  })
+  vim.api.nvim_set_hl(0, "FxBackdrop", { bg = "#000000", default = true })
+  vim.api.nvim_set_option_value("winhighlight", "Normal:FxBackdrop", { scope = "local", win = self.backdrop_win })
+  vim.api.nvim_set_option_value("winblend", 45, { scope = "local", win = self.backdrop_win })
+  vim.bo[self.backdrop_buf].buftype = "nofile"
+  vim.bo[self.backdrop_buf].filetype = "fx_backdrop"
 end
 
 function M:_locate_user_code()
@@ -301,7 +300,7 @@ function M:action_apply()
 
   -- check if target buffer has been modified
   local seq_cur = vim.fn.undotree(self.ctx.buf_range.bufnr).seq_cur
-  if seq_cur ~= self.target_buf_init_undo_seq then
+  if seq_cur ~= self.ctx.buf_range.undotree_seq then
     U.msg_warn("filter-do.nvim: Target buffer has been modified, cannot apply filter")
     return
   end
@@ -330,7 +329,7 @@ function M:action_undo()
   local undo_seq = self.target_buf_undo_seq
   self.target_buf_undo_seq = nil
   vim.api.nvim_buf_call(self.ctx.buf_range.bufnr, function()
-    vim.cmd.undo({ count = undo_seq })
+    vim.cmd.undo({ count = self.ctx.buf_range.undotree_seq })
   end)
   vim.api.nvim_win_set_config(self.scratch_win_id, {
     footer = gen_scratch_footer(self.target_buf_undo_seq),
@@ -468,7 +467,7 @@ function M:action_preview_diff()
 
   -- check if target buffer has been modified
   local seq_cur = vim.fn.undotree(self.ctx.buf_range.bufnr).seq_cur
-  if seq_cur ~= self.target_buf_init_undo_seq then
+  if seq_cur ~= self.ctx.buf_range.undotree_seq then
     U.msg_err("filter-do.nvim: Target buffer has been modified, cannot preview diff")
     return
   end
