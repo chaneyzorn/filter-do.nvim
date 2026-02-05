@@ -16,14 +16,9 @@ end
 ---@param ctx filter_do.FxCtx
 local function gen_buf_range_footer(ctx)
   if ctx.buf_range.v_char_wised then
-    local range_mode = "Visual-Range"
-    local end_col = tostring(ctx.buf_range.end_col)
-    if ctx.buf_range.end_col == vim.v.maxcol then
-      end_col = "$"
-    end
     return {
       { " " },
-      { string.format(" %s ", range_mode), "Visual" },
+      { " Visual-Range ", "Visual" },
       { " " },
       { string.format(" start_row: %s ", ctx.buf_range.start_row), "CursorLine" },
       { " " },
@@ -31,15 +26,14 @@ local function gen_buf_range_footer(ctx)
       { " " },
       { string.format(" end_row: %s ", ctx.buf_range.end_row), "CursorLine" },
       { " " },
-      { string.format(" end_col: %s ", end_col), "CursorLine" },
+      { string.format(" end_col: %s ", ctx.buf_range.end_col), "CursorLine" },
       { " " },
     }
   end
 
-  local range_mode = "Line-Range"
   return {
     { " " },
-    { string.format(" %s ", range_mode), "Visual" },
+    { " Line-Range ", "Visual" },
     { " " },
     { string.format(" start_row: %s ", ctx.buf_range.start_row), "CursorLine" },
     { " " },

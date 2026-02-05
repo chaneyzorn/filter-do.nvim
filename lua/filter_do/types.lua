@@ -12,10 +12,10 @@
 ---@class filter_do.BufRange
 ---@field bufnr integer
 ---@field v_char_wised boolean
----@field start_row integer
----@field end_row integer
----@field start_col integer
----@field end_col integer
+---@field start_row integer 1-based index
+---@field end_row integer 1-based index
+---@field start_col integer 1-based index
+---@field end_col integer 1-based index, vim.v.maxcol for EOL
 
 ---@class filter_do.CodeSnipSpec
 ---@field type

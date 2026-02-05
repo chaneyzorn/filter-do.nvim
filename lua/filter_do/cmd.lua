@@ -17,18 +17,21 @@ local function get_buf_range_from_cmd(user_cmd)
     end_col = vim.v.maxcol,
   }
 
-  -- v-mode char-wised modifier
-  if user_cmd.bang and user_cmd.range == 2 then
-    local _, lnum1, col1 = unpack(vim.fn.getpos("'<"))
-    local _, lnum2, col2 = unpack(vim.fn.getpos("'>"))
-    if lnum1 == user_cmd.line1 and lnum2 == user_cmd.line2 then
+  -- v-mode char-wised detection
+  -- see https://www.petergundel.de/neovim/lua/hack/2023/12/17/get-neovim-mode-when-executing-a-command.html
+  if user_cmd.count > 0 and user_cmd.range == 2 then
+    -- (1-based lines, 0-based columns)
+    local row1, col1 = unpack(vim.api.nvim_buf_get_mark(bufnr, "<"))
+    local row2, col2 = unpack(vim.api.nvim_buf_get_mark(bufnr, ">"))
+    if row1 == user_cmd.line1 and row2 == user_cmd.line2 and col2 ~= vim.v.maxcol then
       buf_range = {
         bufnr = bufnr,
         v_char_wised = true,
         start_row = user_cmd.line1,
         end_row = user_cmd.line2,
-        start_col = col1,
-        end_col = col2,
+        -- (1-based lines, 1-based columns)
+        start_col = col1 + 1,
+        end_col = col2 + 1,
       }
     end
   end

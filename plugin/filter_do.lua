@@ -4,7 +4,7 @@ end, {
   desc = "Execute filter on the buffer text",
   -- :h command-attributes
   bar = false,
-  bang = true,
+  bang = false,
   nargs = "+",
   range = "%", -- default range is whole buffer
   complete = function(_, cmdline, _)
