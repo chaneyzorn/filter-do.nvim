@@ -244,12 +244,12 @@ end
 function M:_locate_user_code()
   vim.api.nvim_buf_call(self.scratch_buf_id, function()
     vim.cmd.edit()
+    vim.api.nvim_set_option_value("buflisted", false, { scope = "local", buf = self.scratch_buf_id })
     vim.cmd("normal! gg0")
-    local rs = vim.fn.search("USER_CODE")
-    if rs == 0 then
-      -- Placeholder replaced by user code snippet, search next placeholder
-      vim.fn.search("user code ended")
-      vim.cmd("normal! {{}k")
+    if vim.fn.search("USER_CODE") == 0 then
+      if vim.fn.search("user-code-ended") ~= 0 then
+        vim.cmd("normal! {{}k")
+      end
     end
     vim.cmd("normal! ^")
   end)

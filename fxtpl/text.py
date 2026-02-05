@@ -37,7 +37,7 @@ def handle_block(text: str) -> str:
     return text  # USER_CODE
 
 
-# user code ended {{{
+# user-code-ended {{{
 
 
 def run_on_block_text():

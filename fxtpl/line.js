@@ -53,7 +53,7 @@ async function handleOneLine(line, linenr) {
   return line; // USER_CODE
 }
 
-// user code ended {{{
+// user-code-ended {{{
 
 function* lineIter(chunk) {
   let index = 0;

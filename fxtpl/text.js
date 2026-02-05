@@ -49,7 +49,7 @@ async function handleBlock(text) {
   return text; // USER_CODE
 }
 
-// user code ended {{{
+// user-code-ended {{{
 
 async function readAllStdin() {
   return new Promise((resolve) => {

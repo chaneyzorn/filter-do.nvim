@@ -41,7 +41,7 @@ def handle_one_line(line: str, linenr: int) -> str:
     return line  # USER_CODE
 
 
-# user code ended {{{
+# user-code-ended {{{
 
 
 def run_on_each_line():
