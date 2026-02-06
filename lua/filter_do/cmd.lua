@@ -87,6 +87,8 @@ end
 
 local M = {}
 
+local batch_cmd_ctxs = {}
+
 ---@param user_cmd vim.api.keyset.create_user_command.command_args
 function M.fx_cmd(user_cmd)
   local sub_cmds = {
@@ -99,8 +101,21 @@ function M.fx_cmd(user_cmd)
   local sub_cmd_fn = sub_cmds[sub_cmd]
   if sub_cmd_fn then
     return sub_cmd_fn()
-  else
+  end
+
+  -- sync executing filter_do
+  if not ctx.edit_scratch then
     return require("filter_do.api").filter_do(ctx)
+  end
+
+  -- batch async executing filter_do with scratch edit
+  local emit_on_first_time = #batch_cmd_ctxs == 0
+  table.insert(batch_cmd_ctxs, ctx)
+  if emit_on_first_time then
+    vim.schedule(function()
+      require("filter_do.api").batch_filter_do(batch_cmd_ctxs)
+      batch_cmd_ctxs = {}
+    end)
   end
 end
 
