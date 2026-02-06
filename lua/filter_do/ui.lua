@@ -21,6 +21,12 @@ local function key_tips(action, ck)
   end
 end
 
+---@class filter_do.UIOpts
+---@field scratch_per_ctx?
+---| "true" use isolated scratch file for each context
+---| "false" share the same scratch file for all contexts
+---| "auto" default, share the same scratch file if all contexts have the same `tpl_name` and `code_snip_spec`, otherwise use isolated scratch files
+
 ---@class filter_do.UICtxState
 ---@field ctx filter_do.FxCtx
 ---@field filter filter_do.filter.Filter
@@ -28,6 +34,7 @@ end
 ---@field target_applied boolean
 
 ---@class filter_do.UI
+---@field private _opts filter_do.UIOpts
 ---@field private _states filter_do.UICtxState[]
 ---@field private _sindex integer
 ---@field private _state filter_do.UICtxState
@@ -42,37 +49,107 @@ local M = {}
 M.__index = M
 
 ---@param ctxs filter_do.FxCtx[]
-function M.new(ctxs)
+---@param opts filter_do.UIOpts|nil
+function M.new(ctxs, opts)
   local self = setmetatable({}, M)
 
-  self._states = {}
-  for _, ctx in ipairs(ctxs) do
-    local stub_success = false
-    local filter = F.get_filter_by_name(ctx.tpl_name)
-    if filter then
-      local stub_path = filter:gen_stub_by_spec(ctx.code_snip_spec)
-      if stub_path and vim.uv.fs_stat(stub_path) then
-        stub_success = true
-        table.insert(self._states, {
-          ctx = ctx,
-          filter = filter,
-          stub_path = stub_path,
-          target_applied = false,
-        })
+  -- fill opts with defaults
+  self._opts = vim.tbl_deep_extend("force", {
+    scratch_per_ctx = "auto",
+  }, opts or {})
+
+  self._sindex = 1
+  self._states = self:_init_states(ctxs)
+  self._state = self._states[self._sindex]
+  return self
+end
+
+---@param ctxs filter_do.FxCtx[]
+---@return filter_do.UICtxState[]
+function M:_init_states(ctxs)
+  local can_share_scratch = self._opts.scratch_per_ctx ~= "true"
+  if can_share_scratch then
+    for i = 2, #ctxs do
+      if ctxs[i].tpl_name ~= ctxs[1].tpl_name then
+        can_share_scratch = false
+        break
+      end
+      if vim.deep_equal(ctxs[i].code_snip_spec, ctxs[1].code_snip_spec) == false then
+        can_share_scratch = false
+        break
       end
     end
+  end
+  if can_share_scratch == false and self._opts.scratch_per_ctx == "false" then
+    local msg = "filter-do.nvim: Sharing a scratch file across different templates is not supported"
+    U.msg_warn(msg)
+  end
+
+  ---@type filter_do.UICtxState[]
+  local states = {}
+  local filters = F.list_filters()
+  for _, ctx in ipairs(ctxs) do
+    local filter = filters[ctx.tpl_name]
     if not filter then
       local err_msg = string.format("filter_do.nvim: filter not found for %s", ctx.tpl_name)
       U.msg_err(err_msg)
-    end
-    if not stub_success then
-      local err_msg = string.format("filter_do.nvim: failed to generate stub file for %s", ctx.tpl_name)
-      U.msg_err(err_msg)
+    else
+      local state = {
+        ctx = ctx,
+        filter = filter,
+        stub_path = nil,
+        target_applied = false,
+      }
+      table.insert(states, state)
     end
   end
-  self._sindex = 1
-  self._state = self._states[self._sindex]
-  return self
+
+  if can_share_scratch then
+    local ctx = states[1].ctx
+    local filter = states[1].filter
+    local stub_path = filter:gen_stub_by_spec(ctx.code_snip_spec)
+    if not stub_path then
+      local err_msg = string.format("filter_do.nvim: failed to generate stub file for %s", ctx.tpl_name)
+      U.msg_err(err_msg)
+      return {}
+    end
+    local shared_obj = { stub_path = stub_path }
+    local mt = {
+      __index = function(t, k)
+        if k == "stub_path" then
+          return shared_obj.stub_path
+        else
+          return rawget(t, k)
+        end
+      end,
+      __newindex = function(t, k, v)
+        if k == "stub_path" then
+          shared_obj.stub_path = v
+        else
+          rawset(t, k, v)
+        end
+      end,
+    }
+    for _, state in ipairs(states) do
+      setmetatable(state, mt)
+    end
+    return states
+  end
+
+  ---@type filter_do.UICtxState[]
+  local res = {}
+  for _, state in ipairs(states) do
+    local ctx = state.ctx
+    local stub_path = state.filter:gen_stub_by_spec(ctx.code_snip_spec)
+    if not stub_path then
+      local err_msg = string.format("filter_do.nvim: failed to generate stub file for %s", ctx.tpl_name)
+      U.msg_err(err_msg)
+    else
+      state.stub_path = stub_path
+      table.insert(res, state)
+    end
+  end
+  return res
 end
 
 function M:_gen_buf_range_footer()
@@ -349,6 +426,12 @@ function M:_refresh_ui()
 end
 
 function M:open_ui()
+  if not self._state then
+    local err_msg = "filter-do.nvim: no valid context to open UI"
+    U.msg_err(err_msg)
+    return
+  end
+
   U.trigger_user_cmd("OpenPre", self:_event_data())
 
   -- record current window before creating floating windows
@@ -580,6 +663,7 @@ function M:_config_float_win()
     for _, state in ipairs(self._states) do
       if state.stub_path and vim.uv.fs_stat(state.stub_path) then
         os.remove(state.stub_path)
+        state.stub_path = nil
       end
       self:clear_buf_range_highlight(state.ctx.buf_range)
     end
