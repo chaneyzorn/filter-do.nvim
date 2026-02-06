@@ -5,49 +5,12 @@ local U = require("filter_do.util")
 local C = require("filter_do.config")
 local Cfg = C.get()
 
-local M = {}
-M.__index = M
-
-function M.new()
-  local self = setmetatable({}, M)
-  return self
-end
-
----@param ctx filter_do.FxCtx
-local function gen_buf_range_footer(ctx)
-  if ctx.buf_range.v_char_wised then
-    return {
-      { " " },
-      { " Visual-Range ", "Visual" },
-      { " " },
-      { string.format(" start_row: %s ", ctx.buf_range.start_row), "CursorLine" },
-      { " " },
-      { string.format(" start_col: %s ", ctx.buf_range.start_col), "CursorLine" },
-      { " " },
-      { string.format(" end_row: %s ", ctx.buf_range.end_row), "CursorLine" },
-      { " " },
-      { string.format(" end_col: %s ", ctx.buf_range.end_col), "CursorLine" },
-      { " " },
-    }
-  end
-
-  return {
-    { " " },
-    { " Line-Range ", "Visual" },
-    { " " },
-    { string.format(" start_row: %s ", ctx.buf_range.start_row), "CursorLine" },
-    { " " },
-    { string.format(" end_row: %s ", ctx.buf_range.end_row), "CursorLine" },
-    { " " },
-  }
-end
-
 ---@param action string
 ---@param ck boolean
 ---@return string
 local function key_tips(action, ck)
   if ck then
-    local keymap = Cfg.action_keymaps[action:lower()]
+    local keymap = Cfg.action_keymaps[action:lower()] or ""
     keymap = string.gsub(keymap, "<([Ll][Oo][Cc][Aa][Ll][Ll][Ee][Aa][Dd][Ee][Rr])>", "<LL>")
     keymap = string.gsub(keymap, "<([Ll][Ee][Aa][Dd][Ee][Rr])>", "<L>")
     return string.format(" %s(%s) ", action, keymap)
@@ -58,7 +21,90 @@ local function key_tips(action, ck)
   end
 end
 
-local function gen_scratch_footer(can_undo)
+---@class filter_do.UICtxState
+---@field ctx filter_do.FxCtx
+---@field filter filter_do.filter.Filter
+---@field stub_path string
+---@field target_applied boolean
+
+---@class filter_do.UI
+---@field private _states filter_do.UICtxState[]
+---@field private _sindex integer
+---@field private _state filter_do.UICtxState
+---@field private _pwin integer
+---@field private _target_win_id integer
+---@field private _scratch_win_id integer
+---@field private _scratch_buf_id integer
+---@field private _preview_buf_id integer
+---@field private _backdrop_win integer
+---@field private _backdrop_buf integer
+local M = {}
+M.__index = M
+
+---@param ctxs filter_do.FxCtx[]
+function M.new(ctxs)
+  local self = setmetatable({}, M)
+
+  self._states = {}
+  for _, ctx in ipairs(ctxs) do
+    local stub_success = false
+    local filter = F.get_filter_by_name(ctx.tpl_name)
+    if filter then
+      local stub_path = filter:gen_stub_by_spec(ctx.code_snip_spec)
+      if stub_path and vim.uv.fs_stat(stub_path) then
+        stub_success = true
+        table.insert(self._states, {
+          ctx = ctx,
+          filter = filter,
+          stub_path = stub_path,
+          target_applied = false,
+        })
+      end
+    end
+    if not filter then
+      local err_msg = string.format("filter_do.nvim: filter not found for %s", ctx.tpl_name)
+      U.msg_err(err_msg)
+    end
+    if not stub_success then
+      local err_msg = string.format("filter_do.nvim: failed to generate stub file for %s", ctx.tpl_name)
+      U.msg_err(err_msg)
+    end
+  end
+  self._sindex = 1
+  self._state = self._states[self._sindex]
+  return self
+end
+
+function M:_gen_buf_range_footer()
+  local buf_range = self._state.ctx.buf_range
+  if buf_range.v_char_wised then
+    return {
+      { " " },
+      { " Visual-Range ", "Visual" },
+      { " " },
+      { string.format(" start_row: %s ", buf_range.start_row), "CursorLine" },
+      { " " },
+      { string.format(" start_col: %s ", buf_range.start_col), "CursorLine" },
+      { " " },
+      { string.format(" end_row: %s ", buf_range.end_row), "CursorLine" },
+      { " " },
+      { string.format(" end_col: %s ", buf_range.end_col), "CursorLine" },
+      { " " },
+    }
+  end
+
+  return {
+    { " " },
+    { " Line-Range ", "Visual" },
+    { " " },
+    { string.format(" start_row: %s ", buf_range.start_row), "CursorLine" },
+    { " " },
+    { string.format(" end_row: %s ", buf_range.end_row), "CursorLine" },
+    { " " },
+  }
+end
+
+function M:_gen_scratch_footer()
   local footer = {}
   local ck = C.has_customized_keymaps()
   if not ck then
@@ -68,7 +114,7 @@ local function gen_scratch_footer(can_undo)
     })
   end
 
-  if can_undo then
+  if self._state.target_applied then
     vim.list_extend(footer, {
       { " " },
       { key_tips("Undo", ck), "CursorLine" },
@@ -94,7 +140,7 @@ local function gen_scratch_footer(can_undo)
   return footer
 end
 
-local function gen_preview_footer()
+function M:_gen_preview_footer()
   local footer = {}
   local ck = C.has_customized_keymaps()
   if not ck then
@@ -115,156 +161,230 @@ local function gen_preview_footer()
   return footer
 end
 
-local function gen_title(title, hi_group)
+function M:_gen_target_title()
+  local current_index = self._sindex
+  local total_num = #self._states
+  local buf_name = U.buf_short_name(self._state.ctx.buf_range.bufnr)
+  if total_num > 1 then
+    local title = string.format("Target(%s/%s): %s", current_index, total_num, buf_name)
+    return {
+      { " " },
+      { key_tips("Previous", true), "CursorLine" },
+      { " " },
+      { title, "Title" },
+      { " " },
+      { key_tips("Next", true), "CursorLine" },
+      { " " },
+    }
+  else
+    local title = string.format("Target: %s", buf_name)
+    return {
+      { " " },
+      { title, "Title" },
+      { " " },
+    }
+  end
+end
+
+function M:_gen_scratch_title()
   return {
     { " " },
-    { title, hi_group or "Title" },
+    { string.format("filter-do: %s", self._state.ctx.tpl_name), "Title" },
     { " " },
   }
 end
 
----@param win_id integer
----@param fn fun():any
-local function with_winfixbuf_disabled(win_id, fn)
-  if not vim.api.nvim_win_is_valid(win_id) then
-    fn()
-  end
-
-  local winfuxbuf = vim.api.nvim_get_option_value("winfixbuf", { win = win_id })
-  vim.api.nvim_set_option_value("winfixbuf", false, { scope = "local", win = win_id })
-  local res = fn()
-  vim.api.nvim_set_option_value("winfixbuf", winfuxbuf, { scope = "local", win = win_id })
-  return res
+function M:_gen_preview_title()
+  return {
+    { " " },
+    {
+      string.format(
+        "Preview: %s (filter-do: %s)",
+        U.buf_short_name(self._state.ctx.buf_range.bufnr),
+        self._state.ctx.tpl_name
+      ),
+      "Title",
+    },
+    { " " },
+  }
 end
 
 ---@return filter_do.UIEventData
 function M:_event_data()
   return {
     ui = self,
-    ctx = self.ctx,
-    stub_path = self.stub_path,
-    target_win_id = self.target_win_id,
-    scratch_win_id = self.scratch_win_id,
-    scratch_buf_id = self.scratch_buf_id,
-    preview_buf_id = self.preview_buf_id,
+    state = self._state,
+    ctx = self._state.ctx,
+    stub_path = self._state.stub_path,
+    target_win_id = self._target_win_id,
+    scratch_win_id = self._scratch_win_id,
+    scratch_buf_id = self._scratch_buf_id,
+    preview_buf_id = self._preview_buf_id,
   }
 end
 
----@param ctx filter_do.FxCtx
-function M:open_scratch_win(ctx)
-  U.trigger_user_cmd("OpenPre", self:_event_data())
-
-  -- ensure stub file exists
-  local filter = F.get_filter_by_name(ctx.tpl_name)
-  if not filter then
-    local err_msg = string.format("filter_do.nvim: filter not found for %s", ctx.tpl_name)
-    U.msg_err(err_msg)
-    return
-  end
-  local stub_path = filter:gen_stub_by_spec(ctx.code_snip_spec)
-  if not (stub_path and vim.uv.fs_stat(stub_path)) then
-    return
+function M:_init_ui()
+  self._preview_buf_id = nil
+  if not self._scratch_buf_id then
+    local scratch_buf_id = vim.api.nvim_create_buf(false, false)
+    vim.api.nvim_buf_set_name(scratch_buf_id, self._state.stub_path)
+    self._scratch_buf_id = scratch_buf_id
+    self:_config_scratch_buf()
   end
 
-  self.ctx = ctx
-  self.filter = filter
-  self.stub_path = stub_path
-
-  -- create buffer and load stub file to the buffer
-  local scratch_buf_id = vim.api.nvim_create_buf(false, false)
-  vim.api.nvim_buf_set_name(scratch_buf_id, stub_path)
-  self.scratch_buf_id = scratch_buf_id
-  self.preview_buf_id = nil
-
-  -- record current window before creating floating windows
-  self.prev_win_id = vim.api.nvim_get_current_win()
-
-  -- create windows
+  local config_float_win = false
   local win_height = math.floor(vim.o.lines * 0.8)
   local win_width = math.floor((vim.o.columns * 0.9) * 0.5)
-  local target_win_id = vim.api.nvim_open_win(ctx.buf_range.bufnr, false, {
-    relative = "editor",
-    border = Cfg.winborder,
-    row = math.floor(vim.o.lines * 0.1) - 1,
-    col = math.floor(vim.o.columns * 0.05),
-    width = win_width - 1,
-    height = win_height,
-    title = gen_title(string.format("Target: %s", U.buf_short_name(ctx.buf_range.bufnr))),
-    title_pos = "center",
-    footer = gen_buf_range_footer(ctx),
-    footer_pos = "center",
-  })
-  self.target_win_id = target_win_id
-  self.target_buf_undo_seq = nil
+  if not self._scratch_win_id then
+    local scratch_win_id = vim.api.nvim_open_win(self._scratch_buf_id, true, {
+      relative = "editor",
+      border = Cfg.winborder,
+      row = math.floor(vim.o.lines * 0.1) - 1,
+      col = math.floor(vim.o.columns * 0.05) + win_width + 1,
+      width = win_width - 1,
+      height = win_height,
+      title = self:_gen_scratch_title(),
+      title_pos = "center",
+      footer = self:_gen_scratch_footer(),
+      footer_pos = "center",
+    })
+    self._scratch_win_id = scratch_win_id
+    vim.api.nvim_set_option_value("winfixbuf", true, { scope = "local", win = self._scratch_win_id })
+    self:_locate_user_code(true)
+    config_float_win = true
+  end
+  if not self._target_win_id then
+    local target_win_id = vim.api.nvim_open_win(self._state.ctx.buf_range.bufnr, false, {
+      relative = "editor",
+      border = Cfg.winborder,
+      row = math.floor(vim.o.lines * 0.1) - 1,
+      col = math.floor(vim.o.columns * 0.05),
+      width = win_width - 1,
+      height = win_height,
+      title = self:_gen_target_title(),
+      title_pos = "center",
+      footer = self:_gen_buf_range_footer(),
+      footer_pos = "center",
+    })
+    self._target_win_id = target_win_id
+    vim.api.nvim_set_option_value("winfixbuf", true, { scope = "local", win = self._target_win_id })
+    self:highlight_buf_range()
+    config_float_win = true
+  end
+  if config_float_win then
+    self:_config_float_win()
+  end
 
-  local scratch_win_id = vim.api.nvim_open_win(scratch_buf_id, true, {
-    relative = "editor",
-    border = Cfg.winborder,
-    row = math.floor(vim.o.lines * 0.1) - 1,
-    col = math.floor(vim.o.columns * 0.05) + win_width + 1,
-    width = win_width - 1,
-    height = win_height,
-    title = gen_title(string.format("filter-do: %s", ctx.tpl_name)),
-    title_pos = "center",
-    footer = gen_scratch_footer(self.target_buf_undo_seq),
-    footer_pos = "center",
-  })
-  self.scratch_win_id = scratch_win_id
+  -- create backdrop, credit to lazy.nvim, Apache-2.0 license
+  if not self._backdrop_buf then
+    self._backdrop_buf = vim.api.nvim_create_buf(false, true)
+    vim.bo[self._backdrop_buf].buftype = "nofile"
+    vim.bo[self._backdrop_buf].filetype = "fx_backdrop"
+  end
+  if not self._backdrop_win then
+    self._backdrop_win = vim.api.nvim_open_win(self._backdrop_buf, false, {
+      relative = "editor",
+      border = "none",
+      width = vim.o.columns,
+      height = vim.o.lines,
+      row = 0,
+      col = 0,
+      style = "minimal",
+      focusable = false,
+      zindex = 30,
+    })
+    vim.api.nvim_set_hl(0, "FxBackdrop", { bg = "#000000", default = true })
+    vim.api.nvim_set_option_value("winhighlight", "Normal:FxBackdrop", { scope = "local", win = self._backdrop_win })
+    vim.api.nvim_set_option_value("winblend", 45, { scope = "local", win = self._backdrop_win })
+  end
+end
 
-  self:_config_scratch_buf()
-  self:_config_float_win()
-  self:_create_backdrop()
-  self:highlight_buf_range(ctx.buf_range)
+function M:_refresh_ui()
+  if self._preview_buf_id then
+    return -- skip refresh during preview
+  end
+
+  -- refresh target window
+  if vim.api.nvim_win_get_buf(self._target_win_id) ~= self._state.ctx.buf_range.bufnr then
+    U.with_winfixbuf_disabled(self._target_win_id, function()
+      vim.api.nvim_win_set_buf(self._target_win_id, self._state.ctx.buf_range.bufnr)
+    end)
+    vim.api.nvim_win_set_config(self._target_win_id, {
+      title = self:_gen_target_title(),
+      footer = self:_gen_buf_range_footer(),
+    })
+  end
+  if self._state.target_applied then
+    self:clear_buf_range_highlight()
+  else
+    self:highlight_buf_range()
+  end
+
+  -- refresh scratch window
+  local focus_user_code = nil
+  if vim.api.nvim_buf_get_name(self._scratch_buf_id) ~= self._state.stub_path then
+    vim.api.nvim_buf_call(self._scratch_buf_id, function()
+      vim.cmd.update()
+    end)
+    vim.api.nvim_buf_set_name(self._scratch_buf_id, self._state.stub_path)
+    focus_user_code = function()
+      self:_locate_user_code(true)
+    end
+  end
+  if vim.api.nvim_win_get_buf(self._scratch_win_id) ~= self._scratch_buf_id then
+    U.with_winfixbuf_disabled(self._scratch_win_id, function()
+      vim.api.nvim_win_set_buf(self._scratch_win_id, self._scratch_buf_id)
+    end)
+    focus_user_code = function()
+      self:_locate_user_code(false)
+    end
+  end
+  if focus_user_code then
+    focus_user_code()
+  end
+  vim.api.nvim_win_set_config(self._scratch_win_id, {
+    title = self:_gen_scratch_title(),
+    footer = self:_gen_scratch_footer(),
+  })
+end
+
+function M:open_ui()
+  U.trigger_user_cmd("OpenPre", self:_event_data())
+
+  -- record current window before creating floating windows
+  self._pwin = vim.api.nvim_get_current_win()
+  -- switch to scratch_win_id
+  self:_init_ui()
 
   U.trigger_user_cmd("OpenPost", self:_event_data())
 end
 
-function M:_create_backdrop()
-  -- credit to lazy.nvim, Apache-2.0 license
-  self.backdrop_buf = vim.api.nvim_create_buf(false, true)
-  self.backdrop_win = vim.api.nvim_open_win(self.backdrop_buf, false, {
-    relative = "editor",
-    border = "none",
-    width = vim.o.columns,
-    height = vim.o.lines,
-    row = 0,
-    col = 0,
-    style = "minimal",
-    focusable = false,
-    zindex = 30,
-  })
-  vim.api.nvim_set_hl(0, "FxBackdrop", { bg = "#000000", default = true })
-  vim.api.nvim_set_option_value("winhighlight", "Normal:FxBackdrop", { scope = "local", win = self.backdrop_win })
-  vim.api.nvim_set_option_value("winblend", 45, { scope = "local", win = self.backdrop_win })
-  vim.bo[self.backdrop_buf].buftype = "nofile"
-  vim.bo[self.backdrop_buf].filetype = "fx_backdrop"
-end
-
-function M:_locate_user_code()
-  vim.api.nvim_buf_call(self.scratch_buf_id, function()
-    vim.cmd.edit()
-    vim.api.nvim_set_option_value("buflisted", false, { scope = "local", buf = self.scratch_buf_id })
-    vim.cmd("normal! gg0")
-    if vim.fn.search("USER_CODE") == 0 then
-      if vim.fn.search("user-code-ended") ~= 0 then
-        vim.cmd("normal! {{}k")
+---@param move_cursor boolean
+function M:_locate_user_code(move_cursor)
+  if move_cursor then
+    vim.api.nvim_win_call(self._scratch_win_id, function()
+      vim.cmd.edit()
+      vim.api.nvim_set_option_value("buflisted", false, { scope = "local", buf = self._scratch_buf_id })
+      vim.cmd("normal! gg0")
+      if vim.fn.search("USER_CODE") == 0 then
+        if vim.fn.search("user-code-ended") ~= 0 then
+          vim.cmd("normal! {{}k")
+        end
       end
-    end
-    vim.cmd("normal! ^")
-  end)
+      vim.cmd("normal! ^")
+    end)
+  end
+
+  vim.api.nvim_set_option_value("foldmethod", "marker", { scope = "local", win = self._scratch_win_id })
+  vim.api.nvim_set_option_value("foldlevel", 0, { scope = "local", win = self._scratch_win_id })
 end
 
-function M:_locate_target_win()
-  local buf_range = self.ctx.buf_range
-  vim.api.nvim_win_set_cursor(self.target_win_id, { buf_range.start_row, buf_range.start_col })
-  vim.api.nvim_win_call(self.target_win_id, function()
+function M:highlight_buf_range()
+  local buf_range = self._state.ctx.buf_range
+  vim.api.nvim_win_set_cursor(self._target_win_id, { buf_range.start_row, buf_range.start_col })
+  vim.api.nvim_win_call(self._target_win_id, function()
     vim.cmd("normal! zt")
   end)
-end
-
----@param buf_range filter_do.BufRange
-function M:highlight_buf_range(buf_range)
-  self:_locate_target_win()
 
   local ns_name = "filter_do.buf_range_hl"
   local ns_id = vim.api.nvim_create_namespace(ns_name)
@@ -283,8 +403,9 @@ function M:highlight_buf_range(buf_range)
   )
 end
 
----@param buf_range filter_do.BufRange
+---@param buf_range filter_do.BufRange|nil
 function M:clear_buf_range_highlight(buf_range)
+  buf_range = buf_range or self._state.ctx.buf_range
   local ns_name = "filter_do.buf_range_hl"
   local ns_id = vim.api.nvim_create_namespace(ns_name)
   vim.api.nvim_buf_clear_namespace(buf_range.bufnr, ns_id, 0, -1)
@@ -293,28 +414,25 @@ end
 function M:action_apply()
   U.trigger_user_cmd("ApplyPre", self:_event_data())
 
-  if self.target_buf_undo_seq ~= nil then
+  if self._state.target_applied then
     U.msg_warn("filter-do.nvim: Undo previous apply before applying again")
     return
   end
 
   -- check if target buffer has been modified
-  local seq_cur = vim.fn.undotree(self.ctx.buf_range.bufnr).seq_cur
-  if seq_cur ~= self.ctx.buf_range.undotree_seq then
+  local seq_cur = vim.fn.undotree(self._state.ctx.buf_range.bufnr).seq_cur
+  if seq_cur ~= self._state.ctx.buf_range.undotree_seq then
     U.msg_warn("filter-do.nvim: Target buffer has been modified, cannot apply filter")
     return
   end
 
-  vim.api.nvim_buf_call(self.scratch_buf_id, function()
+  vim.api.nvim_buf_call(self._scratch_buf_id, function()
     vim.cmd.update()
   end)
 
-  self.target_buf_undo_seq = seq_cur
-  self.filter:exec_filter(self.ctx, self.stub_path)
-  vim.api.nvim_win_set_config(self.scratch_win_id, {
-    footer = gen_scratch_footer(self.target_buf_undo_seq),
-  })
-  self:clear_buf_range_highlight(self.ctx.buf_range)
+  self._state.target_applied = true
+  self._state.filter:exec_filter(self._state.ctx, self._state.stub_path)
+  self:_refresh_ui()
 
   U.trigger_user_cmd("ApplyPost", self:_event_data())
 end
@@ -322,19 +440,16 @@ end
 function M:action_undo()
   U.trigger_user_cmd("UndoPre", self:_event_data())
 
-  if self.target_buf_undo_seq == nil then
+  if not self._state.target_applied then
     U.msg_warn("filter-do.nvim: No apply action to undo")
     return
   end
-  local undo_seq = self.target_buf_undo_seq
-  self.target_buf_undo_seq = nil
-  vim.api.nvim_buf_call(self.ctx.buf_range.bufnr, function()
-    vim.cmd.undo({ count = self.ctx.buf_range.undotree_seq })
+
+  vim.api.nvim_buf_call(self._state.ctx.buf_range.bufnr, function()
+    vim.cmd.undo({ count = self._state.ctx.buf_range.undotree_seq })
   end)
-  vim.api.nvim_win_set_config(self.scratch_win_id, {
-    footer = gen_scratch_footer(self.target_buf_undo_seq),
-  })
-  self:highlight_buf_range(self.ctx.buf_range)
+  self._state.target_applied = false
+  self:_refresh_ui()
 
   U.trigger_user_cmd("UndoPost", self:_event_data())
 end
@@ -342,7 +457,7 @@ end
 function M:action_history()
   U.trigger_user_cmd("HistoryPre", self:_event_data())
 
-  vim.ui.select(self.filter:list_history_records("desc", Cfg.show_tpl_as_record), {
+  vim.ui.select(self._state.filter:list_history_records("desc", Cfg.show_tpl_as_record), {
     prompt = "filter-do.nvim: Select history snippet record",
     format_item = function(item)
       return F.format_snippet_record(item)
@@ -351,78 +466,107 @@ function M:action_history()
     if not record then
       return
     end
-    local stub_path = self.filter:gen_stub_by_exist_file(record.path)
-    if not stub_path then
-      return
+    local stub_path = self._state.filter:gen_stub_by_exist_file(record.path)
+    if stub_path then
+      local origin_stub = self._state.stub_path
+      self._state.stub_path = stub_path
+      self:_refresh_ui()
+      os.remove(origin_stub)
     end
 
-    -- update buffer content
-    vim.api.nvim_buf_call(self.scratch_buf_id, function()
-      vim.cmd.update()
-    end)
-    vim.api.nvim_buf_set_name(self.scratch_buf_id, stub_path)
-    self:_locate_user_code()
-
-    local origin_stub = self.stub_path
-    self.stub_path = stub_path
-    os.remove(origin_stub)
+    U.trigger_user_cmd("HistoryPost", self:_event_data())
   end)
-
-  U.trigger_user_cmd("HistoryPost", self:_event_data())
 end
 
 function M:action_close()
   U.trigger_user_cmd("ClosePre", self:_event_data())
 
-  vim.api.nvim_buf_call(self.scratch_buf_id, function()
+  vim.api.nvim_buf_call(self._scratch_buf_id, function()
     vim.cmd.update()
   end)
-  vim.api.nvim_win_close(self.scratch_win_id, true)
+  vim.api.nvim_win_close(self._scratch_win_id, true)
 
   U.trigger_user_cmd("ClosePost", self:_event_data())
 end
 
+function M:action_previous()
+  U.trigger_user_cmd("PreviousPre", self:_event_data())
+
+  -- cycle to previous state
+  self._sindex = self._sindex - 1
+  if self._sindex < 1 then
+    self._sindex = #self._states
+  end
+  self._state = self._states[self._sindex]
+  self:_refresh_ui()
+
+  U.trigger_user_cmd("PreviousPost", self:_event_data())
+end
+
+function M:action_next()
+  U.trigger_user_cmd("NextPre", self:_event_data())
+
+  -- cycle to next state
+  self._sindex = self._sindex + 1
+  if self._sindex > #self._states then
+    self._sindex = 1
+  end
+  self._state = self._states[self._sindex]
+  self:_refresh_ui()
+
+  U.trigger_user_cmd("NextPost", self:_event_data())
+end
+
 function M:_config_scratch_buf()
   local keymap = Cfg.action_keymaps
-  self:_locate_user_code()
-  vim.api.nvim_buf_set_keymap(self.scratch_buf_id, "n", keymap.apply, "", {
+  vim.api.nvim_buf_set_keymap(self._scratch_buf_id, "n", keymap.apply, "", {
     desc = "filter-do: Apply filter",
     callback = function()
       self:action_apply()
     end,
   })
-  vim.api.nvim_buf_set_keymap(self.scratch_buf_id, "n", keymap.undo, "", {
+  vim.api.nvim_buf_set_keymap(self._scratch_buf_id, "n", keymap.undo, "", {
     desc = "filter-do: Undo last apply",
     callback = function()
       self:action_undo()
     end,
   })
-  vim.api.nvim_buf_set_keymap(self.scratch_buf_id, "n", keymap.preview, "", {
+  vim.api.nvim_buf_set_keymap(self._scratch_buf_id, "n", keymap.preview, "", {
     desc = "filter-do: Preview diff",
     callback = function()
       self:action_preview_diff()
     end,
   })
-  vim.api.nvim_buf_set_keymap(self.scratch_buf_id, "n", keymap.history, "", {
+  vim.api.nvim_buf_set_keymap(self._scratch_buf_id, "n", keymap.history, "", {
     desc = "filter-do: History snippet record",
     callback = function()
       self:action_history()
     end,
   })
-  vim.api.nvim_buf_set_keymap(self.scratch_buf_id, "n", keymap.close, "", {
+  vim.api.nvim_buf_set_keymap(self._scratch_buf_id, "n", keymap.close, "", {
     desc = "filter-do: Close window",
     callback = function()
       self:action_close()
     end,
   })
+  vim.api.nvim_buf_set_keymap(self._scratch_buf_id, "n", keymap.previous, "", {
+    desc = "filter-do: Previous target",
+    callback = function()
+      self:action_previous()
+    end,
+  })
+  vim.api.nvim_buf_set_keymap(self._scratch_buf_id, "n", keymap.next, "", {
+    desc = "filter-do: Next target",
+    callback = function()
+      self:action_next()
+    end,
+  })
 end
 
 function M:_config_float_win()
-  local callback_fn = function()
-    self:clear_buf_range_highlight(self.ctx.buf_range)
-
-    local wins = { self.target_win_id, self.scratch_win_id, self.backdrop_win }
-    local bufs = { self.scratch_buf_id, self.preview_buf_id, self.backdrop_buf }
+  local on_close_fn = function()
+    local wins = { self._target_win_id, self._scratch_win_id, self._backdrop_win }
+    local bufs = { self._scratch_buf_id, self._preview_buf_id, self._backdrop_buf }
     for _, win_id in ipairs(wins) do
       if win_id and vim.api.nvim_win_is_valid(win_id) then
         vim.api.nvim_win_close(win_id, true)
@@ -433,77 +577,77 @@ function M:_config_float_win()
         vim.api.nvim_buf_delete(buf_id, { force = true })
       end
     end
-
-    os.remove(self.stub_path)
+    for _, state in ipairs(self._states) do
+      if state.stub_path and vim.uv.fs_stat(state.stub_path) then
+        os.remove(state.stub_path)
+      end
+      self:clear_buf_range_highlight(state.ctx.buf_range)
+    end
     -- restore previous window
-    if vim.api.nvim_win_is_valid(self.prev_win_id) then
-      vim.api.nvim_set_current_win(self.prev_win_id)
+    if vim.api.nvim_win_is_valid(self._pwin) then
+      vim.api.nvim_set_current_win(self._pwin)
     end
   end
 
   vim.api.nvim_create_autocmd("WinClosed", {
-    pattern = tostring(self.scratch_win_id),
-    callback = callback_fn,
+    pattern = tostring(self._scratch_win_id),
+    callback = on_close_fn,
     once = true,
   })
   vim.api.nvim_create_autocmd("WinClosed", {
-    pattern = tostring(self.target_win_id),
-    callback = callback_fn,
+    pattern = tostring(self._target_win_id),
+    callback = on_close_fn,
     once = true,
   })
-  vim.api.nvim_set_option_value("winfixbuf", true, { scope = "local", win = self.target_win_id })
-  vim.api.nvim_set_option_value("winfixbuf", true, { scope = "local", win = self.scratch_win_id })
-  vim.api.nvim_set_option_value("foldmethod", "marker", { scope = "local", win = self.scratch_win_id })
-  vim.api.nvim_set_option_value("foldlevel", 0, { scope = "local", win = self.scratch_win_id })
 end
 
 function M:action_preview_diff()
   U.trigger_user_cmd("PreviewPre", self:_event_data())
 
-  if self.target_buf_undo_seq ~= nil then
+  if self._state.target_applied then
     U.msg_warn("filter-do.nvim: Undo previous apply before previewing diff")
     return
   end
 
   -- check if target buffer has been modified
-  local seq_cur = vim.fn.undotree(self.ctx.buf_range.bufnr).seq_cur
-  if seq_cur ~= self.ctx.buf_range.undotree_seq then
+  local buf_range = self._state.ctx.buf_range
+  local seq_cur = vim.fn.undotree(buf_range.bufnr).seq_cur
+  if seq_cur ~= buf_range.undotree_seq then
     U.msg_err("filter-do.nvim: Target buffer has been modified, cannot preview diff")
     return
   end
 
-  vim.api.nvim_buf_call(self.scratch_buf_id, function()
-    vim.cmd.update()
-  end)
-
-  local lines = vim.api.nvim_buf_get_lines(self.ctx.buf_range.bufnr, 0, -1, false)
+  -- create preview buffer
+  local lines = vim.api.nvim_buf_get_lines(buf_range.bufnr, 0, -1, false)
   local preview_buf = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_lines(preview_buf, 0, -1, false, lines)
-  self.preview_buf_id = preview_buf
+  self._preview_buf_id = preview_buf
 
-  local preview_ctx = vim.deepcopy(self.ctx)
-  preview_ctx.buf_range.bufnr = preview_buf
-  self.filter:exec_filter(preview_ctx, self.stub_path)
-
-  with_winfixbuf_disabled(self.scratch_win_id, function()
-    vim.api.nvim_win_set_buf(self.scratch_win_id, preview_buf)
+  vim.api.nvim_buf_call(self._scratch_buf_id, function()
+    vim.cmd.update()
   end)
-  vim.api.nvim_win_set_config(self.scratch_win_id, {
-    title = gen_title(
-      string.format("Preview: %s (filter-do: %s)", U.buf_short_name(self.ctx.buf_range.bufnr), self.ctx.tpl_name)
-    ),
-    footer = gen_preview_footer(),
+  -- exec filter on preview buffer
+  local preview_ctx = vim.deepcopy(self._state.ctx)
+  preview_ctx.buf_range.bufnr = preview_buf
+  self._state.filter:exec_filter(preview_ctx, self._state.stub_path)
+
+  U.with_winfixbuf_disabled(self._scratch_win_id, function()
+    vim.api.nvim_win_set_buf(self._scratch_win_id, preview_buf)
+  end)
+  vim.api.nvim_win_set_config(self._scratch_win_id, {
+    title = self:_gen_preview_title(),
+    footer = self:_gen_preview_footer(),
   })
   self:_config_preview_buf()
-  self:clear_buf_range_highlight(self.ctx.buf_range)
+  self:clear_buf_range_highlight()
 
   -- clear all diff related options in all wins in the current tabpage
   vim.cmd.diffoff({ bang = true })
   -- set diff in target and preview wins
-  vim.api.nvim_win_call(self.target_win_id, function()
+  vim.api.nvim_win_call(self._target_win_id, function()
     vim.cmd.diffthis()
   end)
-  vim.api.nvim_win_call(self.scratch_win_id, function()
+  vim.api.nvim_win_call(self._scratch_win_id, function()
     vim.cmd.diffthis()
   end)
 
@@ -515,40 +659,30 @@ function M:action_back()
 
   -- clear all diff related options in all wins in the current tabpage
   vim.cmd.diffoff({ bang = true })
-  self:highlight_buf_range(self.ctx.buf_range)
-
-  with_winfixbuf_disabled(self.scratch_win_id, function()
-    vim.api.nvim_win_set_buf(self.scratch_win_id, self.scratch_buf_id)
-  end)
-  vim.api.nvim_buf_delete(self.preview_buf_id, { force = true })
-  self.preview_buf_id = nil
-
-  vim.api.nvim_win_set_config(self.scratch_win_id, {
-    title = gen_title(string.format("filter-do: %s", self.ctx.tpl_name)),
-    footer = gen_scratch_footer(self.target_buf_undo_seq),
-  })
-  vim.api.nvim_set_option_value("foldmethod", "marker", { scope = "local", win = self.scratch_win_id })
-  vim.api.nvim_set_option_value("foldlevel", 0, { scope = "local", win = self.scratch_win_id })
+  local preview_buf_id = self._preview_buf_id
+  self._preview_buf_id = nil
+  self:_refresh_ui()
+  vim.api.nvim_buf_delete(preview_buf_id, { force = true })
 
   U.trigger_user_cmd("BackPost", self:_event_data())
 end
 
 function M:_config_preview_buf()
   local keymap = Cfg.action_keymaps
-  vim.api.nvim_buf_set_keymap(self.preview_buf_id, "n", keymap.apply, "", {
+  vim.api.nvim_buf_set_keymap(self._preview_buf_id, "n", keymap.apply, "", {
     desc = "filter-do: Apply filter",
     callback = function()
       self:action_back()
       self:action_apply()
     end,
   })
-  vim.api.nvim_buf_set_keymap(self.preview_buf_id, "n", keymap.back, "", {
+  vim.api.nvim_buf_set_keymap(self._preview_buf_id, "n", keymap.back, "", {
     desc = "filter-do: Back to scratch",
     callback = function()
       self:action_back()
     end,
   })
-  vim.api.nvim_buf_set_keymap(self.preview_buf_id, "n", keymap.close, "", {
+  vim.api.nvim_buf_set_keymap(self._preview_buf_id, "n", keymap.close, "", {
     desc = "filter-do: Close window",
     callback = function()
       self:action_back()

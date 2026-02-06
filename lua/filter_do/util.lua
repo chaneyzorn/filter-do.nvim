@@ -168,4 +168,18 @@ function U.trigger_user_cmd(pattern, data)
   vim.api.nvim_exec_autocmds("User", { pattern = "Fx" .. pattern, data = data })
 end
 
+---@param win_id integer
+---@param fn fun():any
+function U.with_winfixbuf_disabled(win_id, fn)
+  if not vim.api.nvim_win_is_valid(win_id) then
+    fn()
+  end
+
+  local winfuxbuf = vim.api.nvim_get_option_value("winfixbuf", { win = win_id })
+  vim.api.nvim_set_option_value("winfixbuf", false, { scope = "local", win = win_id })
+  local res = fn()
+  vim.api.nvim_set_option_value("winfixbuf", winfuxbuf, { scope = "local", win = win_id })
+  return res
+end
+
 return U

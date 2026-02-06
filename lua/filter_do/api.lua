@@ -31,8 +31,9 @@ M.get_current_buffer_range = U.get_current_buffer_range
 ---@param ctx filter_do.FxCtx
 function M.filter_do(ctx)
   if ctx.edit_scratch then
-    local ui = require("filter_do.ui").new()
-    ui:open_scratch_win(ctx)
+    vim.schedule(function()
+      require("filter_do.ui").new({ ctx }):open_ui()
+    end)
     return
   end
 
@@ -43,6 +44,27 @@ function M.filter_do(ctx)
     return
   end
   return filter:exec_filter(ctx)
+end
+
+---@param ctxs filter_do.FxCtx[]
+function M.batch_filter_do(ctxs)
+  local sync_ctx = {}
+  local async_ctx = {}
+  for _, ctx in ipairs(ctxs) do
+    if ctx.edit_scratch then
+      table.insert(async_ctx, ctx)
+    else
+      table.insert(sync_ctx, ctx)
+    end
+  end
+  for _, ctx in ipairs(sync_ctx) do
+    M.filter_do(ctx)
+  end
+  if #async_ctx > 0 then
+    vim.schedule(function()
+      require("filter_do.ui").new(async_ctx):open_ui()
+    end)
+  end
 end
 
 ---@async

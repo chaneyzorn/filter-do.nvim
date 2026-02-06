@@ -15,6 +15,8 @@ local defaults = {
     history = "<LocalLeader>h",
     back = "<LocalLeader>b",
     close = "<LocalLeader>c",
+    previous = "<LocalLeader>[",
+    next = "<LocalLeader>]",
   },
 }
 

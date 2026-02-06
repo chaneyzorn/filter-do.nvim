@@ -322,7 +322,7 @@ end
 
 ---@param ctx filter_do.FxCtx
 ---@param stub_path string|nil not gen stub file if specified
----@return integer|nil
+---@return boolean
 function F:exec_filter(ctx, stub_path)
   U.trigger_user_cmd("ExecPre", { ctx = ctx })
 
@@ -331,7 +331,7 @@ function F:exec_filter(ctx, stub_path)
   if readonly or not modifiable then
     local err_msg = string.format("filter_do.nvim: buffer %s is not modifiable", ctx.buf_range.bufnr)
     U.msg_err(err_msg)
-    return
+    return false
   end
 
   local orphan_stub = stub_path == nil
@@ -339,7 +339,7 @@ function F:exec_filter(ctx, stub_path)
     stub_path = self:gen_stub_by_spec(ctx.code_snip_spec)
   end
   if not (stub_path and vim.uv.fs_stat(stub_path)) then
-    return
+    return false
   end
 
   local executor_ctx = self.executor.pre_action({
@@ -351,14 +351,14 @@ function F:exec_filter(ctx, stub_path)
   if not executor_ctx then
     local err_msg = string.format("filter_do.nvim: pre_action failed for filter %s", self.tpl_name)
     U.msg_err(err_msg)
-    return
+    return false
   end
 
   local filter_cmd = self.executor.filter_cmd(executor_ctx)
   if not filter_cmd or #filter_cmd == 0 then
     local err_msg = string.format("filter_do.nvim: failed to gen cmd for filter %s", self.tpl_name)
     U.msg_err(err_msg)
-    return
+    return false
   end
 
   if ctx.buf_range.v_char_wised then
@@ -389,7 +389,7 @@ function F:exec_filter(ctx, stub_path)
     if orphan_stub then
       os.remove(stub_path)
     end
-    return res_code
+    return res_code == 0
   end
 
   return vim.api.nvim_buf_call(ctx.buf_range.bufnr, function()
@@ -414,7 +414,7 @@ function F:exec_filter(ctx, stub_path)
     if orphan_stub then
       os.remove(stub_path)
     end
-    return res_code
+    return res_code == 0
   end)
 end
 
