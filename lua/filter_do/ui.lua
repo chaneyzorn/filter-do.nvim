@@ -574,6 +574,7 @@ end
 
 function M:action_previous()
   U.trigger_user_cmd("PreviousPre", self:_event_data())
+  U.trigger_user_cmd("SwitchPre", self:_event_data())
 
   -- cycle to previous state
   self._sindex = self._sindex - 1
@@ -583,11 +584,13 @@ function M:action_previous()
   self._state = self._states[self._sindex]
   self:_refresh_ui()
 
+  U.trigger_user_cmd("SwitchPost", self:_event_data())
   U.trigger_user_cmd("PreviousPost", self:_event_data())
 end
 
 function M:action_next()
   U.trigger_user_cmd("NextPre", self:_event_data())
+  U.trigger_user_cmd("SwitchPre", self:_event_data())
 
   -- cycle to next state
   self._sindex = self._sindex + 1
@@ -597,6 +600,7 @@ function M:action_next()
   self._state = self._states[self._sindex]
   self:_refresh_ui()
 
+  U.trigger_user_cmd("SwitchPost", self:_event_data())
   U.trigger_user_cmd("NextPost", self:_event_data())
 end
 
