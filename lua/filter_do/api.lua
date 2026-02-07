@@ -71,17 +71,24 @@ end
 ---@param ctx_getter filter_do.api.FxCtxGetter
 ---@return filter_do.FxCtx | nil
 local function get_ctx_from_getter(ctx_getter)
-  local buf_range = ctx_getter.get_buf_range()
-  local tpl_name = ctx_getter.select_tpl()
+  local opts = ctx_getter.opts or {}
+
+  local buf_range = opts.buf_range or ctx_getter.get_buf_range()
+  if not buf_range then
+    return nil
+  end
+  local tpl_name = opts.tpl_name or ctx_getter.select_tpl()
   if not tpl_name then
     return nil
   end
-  local code_snip_spec = ctx_getter.get_code_snip_spec(tpl_name)
+  local code_snip_spec = opts.code_snip_spec or ctx_getter.get_code_snip_spec(tpl_name)
   if not code_snip_spec then
     return nil
   end
-  local edit_scratch = ctx_getter.edit_before_apply()
-  local env = ctx_getter.get_env(buf_range)
+
+  local edit_scratch = opts.edit_scratch or ctx_getter.edit_before_apply()
+  local env = opts.env or ctx_getter.get_env(buf_range) or {}
+  env = vim.tbl_extend("keep", env, U.default_env_from_buf_range(buf_range))
 
   ---@type filter_do.FxCtx
   local ctx = {
@@ -91,7 +98,6 @@ local function get_ctx_from_getter(ctx_getter)
     edit_scratch = edit_scratch,
     env = env,
   }
-  ctx = vim.tbl_deep_extend("force", ctx, ctx_getter.opts or {})
   return ctx
 end
 
@@ -105,7 +111,9 @@ function M.filter_do_wrapper(ctx_getter)
   end)()
 end
 
-function M.select_tpl_and_filter_do()
+---an easy-to-use api to do filter execution with ui selection
+---@param opts filter_do.FxCtxOpts|nil
+function M.select_filter_do(opts)
   if vim.fn.mode():match("^[nvV]") == nil then
     U.msg_err("filter_do.nvim: can only be called in visual mode and normal mode")
     return
@@ -140,13 +148,9 @@ function M.select_tpl_and_filter_do()
       return true
     end,
     get_env = function(buf_range)
-      return {
-        START_ROW = string.format("%s", buf_range.start_row),
-        END_ROW = string.format("%s", buf_range.end_row),
-        FX_LOG = U.get_log_path(),
-      }
+      return U.default_env_from_buf_range(buf_range)
     end,
-    opts = {},
+    opts = opts or {},
   }
 
   return M.filter_do_wrapper(ctx_getter)

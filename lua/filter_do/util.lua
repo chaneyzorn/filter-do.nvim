@@ -107,6 +107,17 @@ function U.get_current_buffer_range()
   return buf_range
 end
 
+---@param buf_range filter_do.BufRange
+---@return filter_do.EnvKv
+function U.default_env_from_buf_range(buf_range)
+  local env = {
+    START_ROW = string.format("%s", buf_range.start_row),
+    END_ROW = string.format("%s", buf_range.end_row),
+    FX_LOG = U.get_log_path(),
+  }
+  return env
+end
+
 ---@param sub_path string|nil
 ---@return string
 function U.ensure_cache_path(sub_path)

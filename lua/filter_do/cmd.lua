@@ -66,13 +66,7 @@ local function parse_fx_cmd_ctx(user_cmd)
 
   local code_snip_spec = get_code_snip_spec_from_cmd(user_cmd)
   local buf_range = get_buf_range_from_cmd(user_cmd)
-
-  ---@type filter_do.EnvKv
-  local env = {
-    START_ROW = string.format("%s", buf_range.start_row),
-    END_ROW = string.format("%s", buf_range.end_row),
-    FX_LOG = U.get_log_path(),
-  }
+  local env = U.default_env_from_buf_range(buf_range)
 
   ---@type filter_do.FxCtx
   local ctx = {
