@@ -72,9 +72,7 @@
 ---@field timestamp integer
 
 ---@class filter_do.UIEventData
----@field ctx filter_do.FxCtx
 ---@field state filter_do.UICtxState
----@field stub_path? string
 ---@field target_win_id? integer
 ---@field scratch_win_id? integer
 ---@field scratch_buf_id? integer

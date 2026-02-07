@@ -289,10 +289,7 @@ end
 ---@return filter_do.UIEventData
 function M:_event_data()
   return {
-    ui = self,
     state = self._state,
-    ctx = self._state.ctx,
-    stub_path = self._state.stub_path,
     target_win_id = self._target_win_id,
     scratch_win_id = self._scratch_win_id,
     scratch_buf_id = self._scratch_buf_id,
