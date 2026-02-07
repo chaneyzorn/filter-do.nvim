@@ -297,6 +297,28 @@ function M:_event_data()
   }
 end
 
+---@return {height: integer, width: integer, row: integer, col: integer}
+function M:win_size_and_location()
+  local win_height = math.floor(vim.o.lines * 0.8)
+  local win_width = math.floor((vim.o.columns * 0.9) * 0.5) - 1
+  local win_row = math.floor(vim.o.lines * 0.1) - 1
+  local win_col = math.floor(vim.o.columns * 0.05)
+  if vim.o.columns < 145 then
+    win_width = math.floor(vim.o.columns * 0.5) - 2
+    win_col = 0
+  end
+  if vim.o.lines < 40 then
+    win_height = vim.o.lines - 4
+    win_row = 0
+  end
+  return {
+    height = win_height,
+    width = win_width,
+    row = win_row,
+    col = win_col,
+  }
+end
+
 function M:_init_ui()
   self._preview_buf_id = nil
   if not self._scratch_buf_id then
@@ -307,16 +329,15 @@ function M:_init_ui()
   end
 
   local config_float_win = false
-  local win_height = math.floor(vim.o.lines * 0.8)
-  local win_width = math.floor((vim.o.columns * 0.9) * 0.5)
+  local sl = self:win_size_and_location()
   if not self._scratch_win_id then
     local scratch_win_id = vim.api.nvim_open_win(self._scratch_buf_id, true, {
       relative = "editor",
       border = Cfg.winborder,
-      row = math.floor(vim.o.lines * 0.1) - 1,
-      col = math.floor(vim.o.columns * 0.05) + win_width + 1,
-      width = win_width - 1,
-      height = win_height,
+      row = sl.row,
+      col = sl.col + sl.width + 2,
+      width = sl.width,
+      height = sl.height,
       title = self:_gen_scratch_title(),
       title_pos = "center",
       footer = self:_gen_scratch_footer(),
@@ -331,10 +352,10 @@ function M:_init_ui()
     local target_win_id = vim.api.nvim_open_win(self._state.ctx.buf_range.bufnr, false, {
       relative = "editor",
       border = Cfg.winborder,
-      row = math.floor(vim.o.lines * 0.1) - 1,
-      col = math.floor(vim.o.columns * 0.05),
-      width = win_width - 1,
-      height = win_height,
+      row = sl.row,
+      col = sl.col,
+      width = sl.width,
+      height = sl.height,
       title = self:_gen_target_title(),
       title_pos = "center",
       footer = self:_gen_buf_range_footer(),
@@ -644,6 +665,40 @@ function M:_config_scratch_buf()
 end
 
 function M:_config_float_win()
+  local resize_augrp_name = string.format("FxResizeFloatWin_%s_%s", self._scratch_win_id, self._target_win_id)
+  local resize_augrp_id = vim.api.nvim_create_augroup(resize_augrp_name, { clear = true })
+  local on_resize_fn = function()
+    local sl = self:win_size_and_location()
+    if vim.api.nvim_win_is_valid(self._scratch_win_id) then
+      vim.api.nvim_win_set_config(self._scratch_win_id, {
+        relative = "editor",
+        row = sl.row,
+        col = sl.col + sl.width + 2,
+        width = sl.width,
+        height = sl.height,
+      })
+    end
+    if vim.api.nvim_win_is_valid(self._target_win_id) then
+      vim.api.nvim_win_set_config(self._target_win_id, {
+        relative = "editor",
+        row = sl.row,
+        col = sl.col,
+        width = sl.width,
+        height = sl.height,
+      })
+    end
+    if vim.api.nvim_win_is_valid(self._backdrop_win) then
+      vim.api.nvim_win_set_config(self._backdrop_win, {
+        width = vim.o.columns,
+        height = vim.o.lines,
+      })
+    end
+  end
+  vim.api.nvim_create_autocmd("VimResized", {
+    group = resize_augrp_id,
+    callback = on_resize_fn,
+  })
+
   local on_close_fn = function()
     local wins = { self._target_win_id, self._scratch_win_id, self._backdrop_win }
     local bufs = { self._scratch_buf_id, self._preview_buf_id, self._backdrop_buf }
@@ -664,6 +719,8 @@ function M:_config_float_win()
       end
       self:clear_buf_range_highlight(state.ctx.buf_range)
     end
+
+    vim.api.nvim_del_augroup_by_id(resize_augrp_id)
     -- restore previous window
     if vim.api.nvim_win_is_valid(self._pwin) then
       vim.api.nvim_set_current_win(self._pwin)
