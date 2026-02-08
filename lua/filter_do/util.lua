@@ -193,4 +193,10 @@ function U.with_winfixbuf_disabled(win_id, fn)
   return res
 end
 
+function U.simplify_key_tips(key)
+  key = string.gsub(key, "<([Ll][Oo][Cc][Aa][Ll][Ll][Ee][Aa][Dd][Ee][Rr])>", "<LL>")
+  key = string.gsub(key, "<([Ll][Ee][Aa][Dd][Ee][Rr])>", "<L>")
+  return key
+end
+
 return U

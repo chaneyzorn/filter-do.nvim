@@ -11,8 +11,7 @@ local Cfg = C.get()
 local function key_tips(action, ck)
   if ck then
     local keymap = Cfg.action_keymaps[action:lower()] or ""
-    keymap = string.gsub(keymap, "<([Ll][Oo][Cc][Aa][Ll][Ll][Ee][Aa][Dd][Ee][Rr])>", "<LL>")
-    keymap = string.gsub(keymap, "<([Ll][Ee][Aa][Dd][Ee][Rr])>", "<L>")
+    keymap = U.simplify_key_tips(keymap)
     return string.format(" %s(%s) ", action, keymap)
   else
     local first_char = action:sub(1, 1):upper()
@@ -153,19 +152,23 @@ function M:_init_states(ctxs)
 end
 
 function M:_gen_buf_range_footer()
+  if self._state.target_applied then
+    return {
+      { " " },
+      { " Target Applied ", "Visual" },
+      { " " },
+    }
+  end
+
   local buf_range = self._state.ctx.buf_range
   if buf_range.v_char_wised then
     return {
       { " " },
       { " Visual-Range ", "Visual" },
       { " " },
-      { string.format(" start_row: %s ", buf_range.start_row), "CursorLine" },
+      { string.format(" start_pos: (%s, %s) ", buf_range.start_row, buf_range.start_col), "CursorLine" },
       { " " },
-      { string.format(" start_col: %s ", buf_range.start_col), "CursorLine" },
-      { " " },
-      { string.format(" end_row: %s ", buf_range.end_row), "CursorLine" },
-      { " " },
-      { string.format(" end_col: %s ", buf_range.end_col), "CursorLine" },
+      { string.format(" end_pos: (%s, %s) ", buf_range.end_row, buf_range.end_col), "CursorLine" },
       { " " },
     }
   end
@@ -243,14 +246,16 @@ function M:_gen_target_title()
   local total_num = #self._states
   local buf_name = U.buf_short_name(self._state.ctx.buf_range.bufnr)
   if total_num > 1 then
-    local title = string.format("Target(%s/%s): %s", current_index, total_num, buf_name)
+    local title = string.format("<-- Target(%s/%s): %s -->", current_index, total_num, buf_name)
+    local key_previous = string.format(" %s ", U.simplify_key_tips(Cfg.action_keymaps.previous))
+    local key_next = string.format(" %s ", U.simplify_key_tips(Cfg.action_keymaps.next))
     return {
       { " " },
-      { key_tips("Previous", true), "CursorLine" },
+      { key_previous, "CursorLine" },
       { " " },
       { title, "Title" },
       { " " },
-      { key_tips("Next", true), "CursorLine" },
+      { key_next, "CursorLine" },
       { " " },
     }
   else
@@ -303,12 +308,13 @@ function M:win_size_and_location()
   local win_width = math.floor((vim.o.columns * 0.9) * 0.5) - 1
   local win_row = math.floor(vim.o.lines * 0.1) - 1
   local win_col = math.floor(vim.o.columns * 0.05)
-  if vim.o.columns < 145 then
+  if vim.o.columns < 240 then
     win_width = math.floor(vim.o.columns * 0.5) - 2
     win_col = 0
   end
-  if vim.o.lines < 40 then
-    win_height = vim.o.lines - 4
+  if vim.o.lines < 50 then
+    -- excluding title + footer + statusline + cmdheight
+    win_height = vim.o.lines - 2 - 1 - vim.o.cmdheight
     win_row = 0
   end
   return {
@@ -404,11 +410,11 @@ function M:_refresh_ui()
     U.with_winfixbuf_disabled(self._target_win_id, function()
       vim.api.nvim_win_set_buf(self._target_win_id, self._state.ctx.buf_range.bufnr)
     end)
-    vim.api.nvim_win_set_config(self._target_win_id, {
-      title = self:_gen_target_title(),
-      footer = self:_gen_buf_range_footer(),
-    })
   end
+  vim.api.nvim_win_set_config(self._target_win_id, {
+    title = self:_gen_target_title(),
+    footer = self:_gen_buf_range_footer(),
+  })
   if self._state.target_applied then
     self:clear_buf_range_highlight()
   else
