@@ -136,7 +136,7 @@ function M.select_filter_do(opts)
     end,
     get_code_snip_spec = function(tpl_name)
       ---@type filter_do.SnippetHistoryRecord | nil
-      local record = Async.ui_select(M.list_history_by_tpl(tpl_name, "desc", Cfg.show_tpl_as_record), {
+      local record = Async.ui_select(M.list_history_by_tpl(tpl_name, "desc", Cfg.ui.show_tpl_as_record), {
         prompt = "filter-do.nvim: Select a snippet history record",
         format_item = function(item)
           return F.format_snippet_record(item)

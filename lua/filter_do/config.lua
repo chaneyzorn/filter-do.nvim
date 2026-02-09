@@ -6,20 +6,21 @@ local defaults = {
   executors = {},
   tpl_exec = {},
   get_executor = nil,
-  -- ui related options
-  winborder = "rounded",
-  action_keymaps = {
-    apply = "<LocalLeader>a",
-    undo = "<LocalLeader>u",
-    preview = "<LocalLeader>p",
-    history = "<LocalLeader>h",
-    back = "<LocalLeader>b",
-    close = "<LocalLeader>c",
-    previous = "<LocalLeader>[",
-    next = "<LocalLeader>]",
+  ui = {
+    ui_select = "auto",
+    show_tpl_as_record = true,
+    winborder = "rounded",
+    action_keymaps = {
+      apply = "<LocalLeader>a",
+      undo = "<LocalLeader>u",
+      preview = "<LocalLeader>p",
+      history = "<LocalLeader>h",
+      back = "<LocalLeader>b",
+      close = "<LocalLeader>c",
+      previous = "<LocalLeader>[",
+      next = "<LocalLeader>]",
+    },
   },
-  ui_select = "auto",
-  show_tpl_as_record = true,
 }
 
 local config = vim.deepcopy(defaults)
@@ -28,14 +29,14 @@ local M = {}
 
 M.ui_select_fn = vim.ui.select
 local function setup_ui_select()
-  if config.ui_select == "telescope" then
+  if config.ui.ui_select == "telescope" then
     M.ui_select_fn = require("filter_do.integration.telescope").ui_select
-  elseif config.ui_select == "auto" then
+  elseif config.ui.ui_select == "auto" then
     if pcall(require, "telescope") then
       M.ui_select_fn = require("filter_do.integration.telescope").ui_select
     end
-  elseif type(config.ui_select) == "function" then
-    M.ui_select_fn = config.ui_select
+  elseif type(config.ui.ui_select) == "function" then
+    M.ui_select_fn = config.ui.ui_select
   end
 end
 
@@ -72,7 +73,7 @@ end
 function M.has_customized_keymaps()
   local d = M.get_defaults()
   local c = M.get()
-  return not vim.deep_equal(d.action_keymaps, c.action_keymaps)
+  return not vim.deep_equal(d.ui.action_keymaps, c.ui.action_keymaps)
 end
 
 return M

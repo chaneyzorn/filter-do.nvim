@@ -10,7 +10,7 @@ local Cfg = C.get()
 ---@return string
 local function key_tips(action, ck)
   if ck then
-    local keymap = Cfg.action_keymaps[action:lower()] or ""
+    local keymap = Cfg.ui.action_keymaps[action:lower()] or ""
     keymap = U.simplify_key_tips(keymap)
     return string.format(" %s(%s) ", action, keymap)
   else
@@ -247,8 +247,8 @@ function M:_gen_target_title()
   local buf_name = U.buf_short_name(self._state.ctx.buf_range.bufnr)
   if total_num > 1 then
     local title = string.format("<-- Target(%s/%s): %s -->", current_index, total_num, buf_name)
-    local key_previous = string.format(" %s ", U.simplify_key_tips(Cfg.action_keymaps.previous))
-    local key_next = string.format(" %s ", U.simplify_key_tips(Cfg.action_keymaps.next))
+    local key_previous = string.format(" %s ", U.simplify_key_tips(Cfg.ui.action_keymaps.previous))
+    local key_next = string.format(" %s ", U.simplify_key_tips(Cfg.ui.action_keymaps.next))
     return {
       { " " },
       { key_previous, "CursorLine" },
@@ -339,7 +339,7 @@ function M:_init_ui()
   if not self._scratch_win_id then
     local scratch_win_id = vim.api.nvim_open_win(self._scratch_buf_id, true, {
       relative = "editor",
-      border = Cfg.winborder,
+      border = Cfg.ui.winborder,
       row = sl.row,
       col = sl.col + sl.width + 2,
       width = sl.width,
@@ -357,7 +357,7 @@ function M:_init_ui()
   if not self._target_win_id then
     local target_win_id = vim.api.nvim_open_win(self._state.ctx.buf_range.bufnr, false, {
       relative = "editor",
-      border = Cfg.winborder,
+      border = Cfg.ui.winborder,
       row = sl.row,
       col = sl.col,
       width = sl.width,
@@ -564,7 +564,7 @@ end
 function M:action_history()
   U.trigger_user_cmd("HistoryPre", self:_event_data())
 
-  C.ui_select_fn(self._state.filter:list_history_records("desc", Cfg.show_tpl_as_record), {
+  C.ui_select_fn(self._state.filter:list_history_records("desc", Cfg.ui.show_tpl_as_record), {
     prompt = "filter-do.nvim: Select a snippet history record",
     format_item = function(item)
       return F.format_snippet_record(item)
@@ -625,7 +625,7 @@ function M:action_next()
 end
 
 function M:_config_scratch_buf()
-  local keymap = Cfg.action_keymaps
+  local keymap = Cfg.ui.action_keymaps
   vim.api.nvim_buf_set_keymap(self._scratch_buf_id, "n", keymap.apply, "", {
     desc = "filter-do: Apply filter",
     callback = function()
@@ -812,7 +812,7 @@ function M:action_back()
 end
 
 function M:_config_preview_buf()
-  local keymap = Cfg.action_keymaps
+  local keymap = Cfg.ui.action_keymaps
   vim.api.nvim_buf_set_keymap(self._preview_buf_id, "n", keymap.apply, "", {
     desc = "filter-do: Apply filter",
     callback = function()
