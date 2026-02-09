@@ -12,12 +12,19 @@ function M.ui_select(items, opts)
   local co = coroutine.running()
   local ui_select_fn = C.ui_select_fn
 
-  ui_select_fn(items, opts, function(choice, _)
-    if coroutine.status(co) == "suspended" then
-      coroutine.resume(co, choice)
-    end
+  --- vim.ui.select is synchronous
+  --- telescope and snacks.picker is asynchronous
+  --- so the ui_select_fn is **potentially** asynchronous
+  --- use vim.schedule to make it awlays asynchronous
+  vim.schedule(function()
+    ui_select_fn(items, opts, function(choice, _)
+      if coroutine.status(co) == "suspended" then
+        coroutine.resume(co, choice)
+      end
+    end)
   end)
 
+  --- `yield` is expected to be called before `resume`.
   return coroutine.yield()
 end
 
