@@ -51,7 +51,7 @@
 ---@field get_executor? fun(tpl_name:string):nil|string|filter_do.executors.ExecutorInfo
 ---@field winborder 'none'|'single'|'double'|'rounded'|'solid'|'shadow'|string[]
 ---@field action_keymaps table<string,string>
----@field ui_select 'default' | 'telescope' | fun(items:any[], opts:table, on_choice:fun(item:any|nil, idx:integer|nil))
+---@field ui_select 'auto' | 'default' | 'telescope' | fun(items:any[], opts:table, on_choice:fun(item:any|nil, idx:integer|nil))
 
 ---@class (partial) filter_do.UserConfig: filter_do.Config
 

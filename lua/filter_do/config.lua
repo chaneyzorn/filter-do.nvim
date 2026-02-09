@@ -18,7 +18,7 @@ local defaults = {
     previous = "<LocalLeader>[",
     next = "<LocalLeader>]",
   },
-  ui_select = "default",
+  ui_select = "auto",
   show_tpl_as_record = true,
 }
 
@@ -30,10 +30,12 @@ M.ui_select_fn = vim.ui.select
 local function setup_ui_select()
   if config.ui_select == "telescope" then
     M.ui_select_fn = require("filter_do.integration.telescope").ui_select
+  elseif config.ui_select == "auto" then
+    if pcall(require, "telescope") then
+      M.ui_select_fn = require("filter_do.integration.telescope").ui_select
+    end
   elseif type(config.ui_select) == "function" then
     M.ui_select_fn = config.ui_select
-  else
-    M.ui_select_fn = vim.ui.select
   end
 end
 
