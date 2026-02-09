@@ -564,8 +564,8 @@ end
 function M:action_history()
   U.trigger_user_cmd("HistoryPre", self:_event_data())
 
-  vim.ui.select(self._state.filter:list_history_records("desc", Cfg.show_tpl_as_record), {
-    prompt = "filter-do.nvim: Select history snippet record",
+  C.ui_select_fn(self._state.filter:list_history_records("desc", Cfg.show_tpl_as_record), {
+    prompt = "filter-do.nvim: Select a snippet history record",
     format_item = function(item)
       return F.format_snippet_record(item)
     end,

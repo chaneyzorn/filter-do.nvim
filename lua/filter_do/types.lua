@@ -23,7 +23,7 @@
 ---| "code_snip" # value: string (the code snippet string)
 ---| "use_last_code" # value: nil (use the last used code snippet)
 ---| "exist_path" # value: string (the path to the code snippet file)
----| "dynamic_func" # value: fun():string (a function that return filter source file path)
+---| "dynamic_func" # value: fun() (a function that return filter source file path)
 ---@field value nil | string | fun(filter_do.filter.Filter):(path:string,keep:boolean)
 
 ---@class filter_do.FxCtx
@@ -51,6 +51,7 @@
 ---@field get_executor? fun(tpl_name:string):nil|string|filter_do.executors.ExecutorInfo
 ---@field winborder 'none'|'single'|'double'|'rounded'|'solid'|'shadow'|string[]
 ---@field action_keymaps table<string,string>
+---@field ui_select 'default' | 'telescope' | fun(items:any[], opts:table, on_choice:fun(item:any|nil, idx:integer|nil))
 
 ---@class (partial) filter_do.UserConfig: filter_do.Config
 
@@ -70,6 +71,7 @@
 ---@field filename string
 ---@field sha256sum string
 ---@field timestamp integer
+---@field is_tpl boolean
 
 ---@class filter_do.UIEventData
 ---@field state filter_do.UICtxState

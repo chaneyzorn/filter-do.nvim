@@ -89,6 +89,7 @@ function F:list_history_records(order, include_tpl_itself)
           filename = filename,
           sha256sum = sha256sum,
           timestamp = timestamp,
+          is_tpl = false,
         })
       end
     end
@@ -100,6 +101,7 @@ function F:list_history_records(order, include_tpl_itself)
       filename = self.tpl_name,
       sha256sum = "",
       timestamp = os.time(),
+      is_tpl = true,
     })
   end
   if order == "desc" then
@@ -508,15 +510,29 @@ function F.clean_all_stubs_and_records(keep_num)
 end
 
 ---@param record filter_do.SnippetHistoryRecord
----@return string
-function F.format_snippet_record(record)
+---@return table{time_str:string,checksum:string,name:string}
+function F.snippet_record_display_fields(record)
   local display_name = string.format("fx_record.%s", record.tpl_name)
   local display_checksum = record.sha256sum:sub(1, 10)
   local time_str = vim.fn.strftime("%Y-%m-%dT%H:%M:%S", record.timestamp)
-  if record.filename == record.tpl_name then
-    display_name = U.short_path(record.path, 2)
+  if record.is_tpl then
+    display_name = U.short_path(record.path, 3)
     display_checksum = "[Template]"
   end
+  return {
+    time_str = time_str,
+    checksum = display_checksum,
+    name = display_name,
+  }
+end
+
+---@param record filter_do.SnippetHistoryRecord
+---@return string
+function F.format_snippet_record(record)
+  local display = F.snippet_record_display_fields(record)
+  local time_str = display.time_str
+  local display_checksum = display.checksum
+  local display_name = display.name
   return string.format("%s %s %s", time_str, display_checksum, display_name)
 end
 

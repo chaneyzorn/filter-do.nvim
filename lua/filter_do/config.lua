@@ -3,10 +3,10 @@
 ---@type filter_do.Config
 local defaults = {
   snippet_record_num = 10,
-  show_tpl_as_record = true,
   executors = {},
   tpl_exec = {},
   get_executor = nil,
+  -- ui related options
   winborder = "rounded",
   action_keymaps = {
     apply = "<LocalLeader>a",
@@ -18,11 +18,24 @@ local defaults = {
     previous = "<LocalLeader>[",
     next = "<LocalLeader>]",
   },
+  ui_select = "default",
+  show_tpl_as_record = true,
 }
 
 local config = vim.deepcopy(defaults)
 
 local M = {}
+
+M.ui_select_fn = vim.ui.select
+local function setup_ui_select()
+  if config.ui_select == "telescope" then
+    M.ui_select_fn = require("filter_do.integration.telescope").ui_select
+  elseif type(config.ui_select) == "function" then
+    M.ui_select_fn = config.ui_select
+  else
+    M.ui_select_fn = vim.ui.select
+  end
+end
 
 ---@param user_config filter_do.UserConfig
 function M.setup(user_config)
@@ -31,6 +44,8 @@ function M.setup(user_config)
   local E = require("filter_do.executors")
   E.setup_executors(config.executors or {})
   E.setup_tpl_exec(config.tpl_exec or {})
+
+  setup_ui_select()
 
   vim.api.nvim_create_autocmd("VimLeavePre", {
     group = vim.api.nvim_create_augroup("filter_do.cleanup", { clear = true }),

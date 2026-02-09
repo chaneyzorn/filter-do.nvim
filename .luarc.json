@@ -9,6 +9,12 @@
   "workspace": {
     "checkThirdParty": false,
     "ignoreDir": [".dependencies"],
-    "library": ["$VIMRUNTIME", "/usr/share/nvim/runtime", "${3rd}/luv/library", "${3rd}/busted/library"]
+    "library": [
+      "$VIMRUNTIME",
+      "/usr/share/nvim/runtime",
+      "~/.local/share/nvim/lazy/telescope.nvim",
+      "${3rd}/luv/library",
+      "${3rd}/busted/library"
+    ]
   }
 }

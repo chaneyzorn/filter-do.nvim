@@ -127,7 +127,7 @@ function M.select_filter_do(opts)
     select_tpl = function()
       ---@type { tpl_name: string, path: string } | nil
       local filter = Async.ui_select(M.list_filters(), {
-        prompt = "filter-do.nvim: Select filter template",
+        prompt = "filter-do.nvim: Select a filter template",
         format_item = function(item)
           return U.short_path(item.path, 3)
         end,
@@ -137,7 +137,7 @@ function M.select_filter_do(opts)
     get_code_snip_spec = function(tpl_name)
       ---@type filter_do.SnippetHistoryRecord | nil
       local record = Async.ui_select(M.list_history_by_tpl(tpl_name, "desc", Cfg.show_tpl_as_record), {
-        prompt = "filter-do.nvim: Select history snippet record",
+        prompt = "filter-do.nvim: Select a snippet history record",
         format_item = function(item)
           return F.format_snippet_record(item)
         end,
