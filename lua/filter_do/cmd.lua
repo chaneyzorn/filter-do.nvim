@@ -107,8 +107,16 @@ function M.fx_cmd(user_cmd)
   table.insert(batch_cmd_ctxs, ctx)
   if emit_on_first_time then
     vim.schedule(function()
-      require("filter_do.api").batch_filter_do(batch_cmd_ctxs)
+      local visited_bufs = {}
+      local unique_buf_ctxs = {}
+      for _, _ctx in ipairs(batch_cmd_ctxs) do
+        if not visited_bufs[_ctx.buf_range.bufnr] then
+          table.insert(unique_buf_ctxs, _ctx)
+          visited_bufs[_ctx.buf_range.bufnr] = true
+        end
+      end
       batch_cmd_ctxs = {}
+      require("filter_do.api").batch_filter_do(unique_buf_ctxs)
     end)
   end
 end
