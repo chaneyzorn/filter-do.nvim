@@ -14,7 +14,7 @@ local conf = require("telescope.config").values
 local actions = require("telescope.actions")
 local action_state = require("telescope.actions.state")
 
-local U = require("filter_do.util")
+local U = require("filter_do.utils")
 local F = require("filter_do.filter")
 
 local M = {}

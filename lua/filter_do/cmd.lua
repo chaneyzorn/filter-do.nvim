@@ -1,6 +1,6 @@
 ---@module "filter_do.cmd"
 
-local U = require("filter_do.util")
+local U = require("filter_do.utils")
 
 ---@param user_cmd vim.api.keyset.create_user_command.command_args
 ---@return filter_do.BufRange

@@ -1,4 +1,4 @@
----@module "filter_do.util"
+---@module "filter_do.utils"
 
 local U = {}
 

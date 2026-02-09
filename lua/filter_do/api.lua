@@ -1,7 +1,7 @@
 ---@module "filter_do.api"
 
 local F = require("filter_do.filter")
-local U = require("filter_do.util")
+local U = require("filter_do.utils")
 local Async = require("filter_do.async")
 local Cfg = require("filter_do.config").get()
 

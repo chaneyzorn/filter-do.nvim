@@ -1,4 +1,4 @@
-local U = require("filter_do.util")
+local U = require("filter_do.utils")
 local E = require("filter_do.executors")
 
 local VIM_PID = tostring(vim.fn.getpid())

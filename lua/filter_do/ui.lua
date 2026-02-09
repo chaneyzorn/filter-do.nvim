@@ -1,7 +1,7 @@
 ---@module "filter_do.ui"
 
 local F = require("filter_do.filter")
-local U = require("filter_do.util")
+local U = require("filter_do.utils")
 local C = require("filter_do.config")
 local Cfg = C.get()
 
