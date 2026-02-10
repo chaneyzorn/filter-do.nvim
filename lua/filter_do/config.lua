@@ -1,5 +1,7 @@
 ---@module 'filter_do.config'
 
+local U = require("filter_do.utils")
+
 ---@type filter_do.Config
 local defaults = {
   snippet_record_num = 10,
@@ -29,14 +31,23 @@ local M = {}
 
 M.ui_select_fn = vim.ui.select
 local function setup_ui_select()
-  if config.ui.ui_select == "telescope" then
+  if config.ui.ui_select == "snacks.picker" then
+    M.ui_select_fn = require("filter_do.integration.snacks_picker").ui_select
+  elseif config.ui.ui_select == "telescope" then
     M.ui_select_fn = require("filter_do.integration.telescope").ui_select
+  elseif config.ui.ui_select == "default" then
+    M.ui_select_fn = vim.ui.select
   elseif config.ui.ui_select == "auto" then
-    if pcall(require, "telescope") then
+    if pcall(require, "snacks.picker") then
+      M.ui_select_fn = require("filter_do.integration.snacks_picker").ui_select
+    elseif pcall(require, "telescope") then
       M.ui_select_fn = require("filter_do.integration.telescope").ui_select
     end
   elseif type(config.ui.ui_select) == "function" then
     M.ui_select_fn = config.ui.ui_select
+  else
+    local msg = string.format("filter-do.nvim: Unknown option `%s` for `ui.ui_select`", config.ui.ui_select)
+    U.msg_warn(msg)
   end
 end
 

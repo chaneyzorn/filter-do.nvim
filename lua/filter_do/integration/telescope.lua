@@ -77,12 +77,7 @@ function M.create_previewer()
         winid = self.state.winid,
         callback = function()
           vim.schedule(function()
-            vim.api.nvim_set_option_value("foldmethod", "marker", { scope = "local", win = self.state.winid })
-            vim.api.nvim_set_option_value("foldlevel", 0, { scope = "local", win = self.state.winid })
-            vim.api.nvim_set_option_value("number", true, { scope = "local", win = self.state.winid })
-            vim.api.nvim_win_call(self.state.winid, function()
-              vim.cmd("normal! zx") -- update fold
-            end)
+            U.config_win_fold(self.state.winid)
           end)
         end,
       })
@@ -90,23 +85,15 @@ function M.create_previewer()
   })
 end
 
+---@class _telescope.uiSelectOpts
+---@field format_item? fun(item: any):string
+---@field prompt string|nil
+---@field kind string|nil
+
 ---@generic T
 ---@param items T[] Arbitrary items
----@param opts table Additional options
----     - prompt (string|nil)
----               Text of the prompt. Defaults to `Select one of:`
----     - format_item (function item -> text)
----               Function to format an
----               individual item from `items`. Defaults to `tostring`.
----     - kind (string|nil)
----               Arbitrary hint string indicating the item shape.
----               Plugins reimplementing `vim.ui.select` may wish to
----               use this to infer the structure or semantics of
----               `items`, or the context in which select() was called.
----@param on_choice fun(item: T|nil, idx: integer|nil)
----               Called once the user made a choice.
----               `idx` is the 1-based index of `item` within `items`.
----               `nil` if the user aborted the dialog.
+---@param opts? _telescope.uiSelectOpts
+---@param on_choice fun(item?: T, idx?: number)
 function M.ui_select(items, opts, on_choice)
   opts = vim.tbl_extend("force", {
     prompt = "Select one of:",

@@ -199,4 +199,13 @@ function U.simplify_key_tips(key)
   return key
 end
 
+function U.config_win_fold(winid)
+  vim.api.nvim_set_option_value("foldmethod", "marker", { scope = "local", win = winid })
+  vim.api.nvim_set_option_value("foldlevel", 0, { scope = "local", win = winid })
+  vim.api.nvim_set_option_value("number", true, { scope = "local", win = winid })
+  vim.api.nvim_win_call(winid, function()
+    vim.cmd("normal! zx") -- update fold
+  end)
+end
+
 return U

@@ -510,7 +510,7 @@ function F.clean_all_stubs_and_records(keep_num)
 end
 
 ---@param record filter_do.SnippetHistoryRecord
----@return table{time_str:string,checksum:string,name:string}
+---@return { time_str:string, checksum:string, name:string }
 function F.snippet_record_display_fields(record)
   local display_name = string.format("fx_record.%s", record.tpl_name)
   local display_checksum = record.sha256sum:sub(1, 10)
