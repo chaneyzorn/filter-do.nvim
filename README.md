@@ -3,6 +3,12 @@
 The missing `:jsdo` and more.
 
 TODO: update README
+TODO: example of lifegame
+TODO: support more executor
+TODO: update type doc
+TODO: data lost warning
+TODO: UI async spinner during execution
+TODO: create highlight group
 
 ## Features
 
