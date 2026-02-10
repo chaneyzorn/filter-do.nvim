@@ -10,7 +10,7 @@ local C = require("filter_do.config")
 function M.ui_select(items, opts)
   opts = opts or { prompt = "Select" }
   local co = coroutine.running()
-  local ui_select_fn = C.ui_select_fn
+  local ui_select_fn = C.get_ui_select_fn()
 
   --- vim.ui.select is synchronous
   --- telescope and snacks.picker is asynchronous

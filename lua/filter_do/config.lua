@@ -29,28 +29,6 @@ local config = vim.deepcopy(defaults)
 
 local M = {}
 
-M.ui_select_fn = vim.ui.select
-local function setup_ui_select()
-  if config.ui.ui_select == "snacks.picker" then
-    M.ui_select_fn = require("filter_do.integration.snacks_picker").ui_select
-  elseif config.ui.ui_select == "telescope" then
-    M.ui_select_fn = require("filter_do.integration.telescope").ui_select
-  elseif config.ui.ui_select == "default" then
-    M.ui_select_fn = vim.ui.select
-  elseif config.ui.ui_select == "auto" then
-    if pcall(require, "snacks.picker") then
-      M.ui_select_fn = require("filter_do.integration.snacks_picker").ui_select
-    elseif pcall(require, "telescope") then
-      M.ui_select_fn = require("filter_do.integration.telescope").ui_select
-    end
-  elseif type(config.ui.ui_select) == "function" then
-    M.ui_select_fn = config.ui.ui_select
-  else
-    local msg = string.format("filter-do.nvim: Unknown option `%s` for `ui.ui_select`", config.ui.ui_select)
-    U.msg_warn(msg)
-  end
-end
-
 ---@param user_config filter_do.UserConfig
 function M.setup(user_config)
   config = vim.tbl_deep_extend("force", config, user_config or {})
@@ -59,8 +37,6 @@ function M.setup(user_config)
   E.setup_executors(config.executors or {})
   E.setup_tpl_exec(config.tpl_exec or {})
 
-  setup_ui_select()
-
   vim.api.nvim_create_autocmd("VimLeavePre", {
     group = vim.api.nvim_create_augroup("filter_do.cleanup", { clear = true }),
     callback = function()
@@ -68,6 +44,50 @@ function M.setup(user_config)
       require("filter_do.filter").clean_all_stubs_and_records(keep_num)
     end,
   })
+end
+
+local ui_select_fn = nil
+local ui_select_fn_map = {
+  ["default"] = function()
+    return vim.ui.select
+  end,
+  ["snacks.picker"] = function()
+    return require("filter_do.integration.snacks_picker").ui_select
+  end,
+  ["telescope"] = function()
+    return require("filter_do.integration.telescope").ui_select
+  end,
+  ["auto"] = function()
+    if pcall(require, "snacks.picker") then
+      return require("filter_do.integration.snacks_picker").ui_select
+    elseif pcall(require, "telescope") then
+      return require("filter_do.integration.telescope").ui_select
+    else
+      return vim.ui.select
+    end
+  end,
+}
+
+---@return filter_do.UISelectFn
+function M.get_ui_select_fn()
+  if ui_select_fn then
+    return ui_select_fn
+  end
+
+  if type(config.ui.ui_select) == "function" then
+    local config_ui_select_fn = config.ui.ui_select
+    ---@cast config_ui_select_fn filter_do.UISelectFn
+    ui_select_fn = config_ui_select_fn
+    return ui_select_fn
+  end
+
+  local get_fn = ui_select_fn_map[config.ui.ui_select]
+  if not get_fn then
+    local msg = string.format("filter-do.nvim: Unknown option `%s` for `ui.ui_select`", config.ui.ui_select)
+    U.msg_warn(msg)
+  end
+  ui_select_fn = get_fn()
+  return ui_select_fn or vim.ui.select
 end
 
 ---@return filter_do.Config
