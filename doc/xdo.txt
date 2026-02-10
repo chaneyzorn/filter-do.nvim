@@ -1,4 +1,4 @@
-*xdo.txt*           For Neovim >= 0.8.0          Last change: 2026 February 01
+*xdo.txt*           For Neovim >= 0.8.0          Last change: 2026 February 10
 
 ==============================================================================
 Table of Contents                                      *xdo-table-of-contents*
@@ -15,7 +15,9 @@ Table of Contents                                      *xdo-table-of-contents*
 
 The missing `:jsdo` and more.
 
-TODO: update README
+TODO: update README TODO: example of lifegame TODO: support more executor TODO:
+update type doc TODO: data lost warning TODO: UI async spinner during execution
+TODO: create highlight group
 
 
 FEATURES                                         *xdo-filter-do.nvim-features*
