@@ -45,6 +45,21 @@ jobs:
         with:
           repository: "Bilal2453/luvit-meta"
           path: ".dependencies/luvit-meta"
+      - name: Clone dependencies - snack.nvim
+        uses: actions/checkout@v4
+        with:
+          repository: "folke/snacks.nvim"
+          path: ".dependencies/snacks.nvim"
+      - name: Clone dependencies - mini.nvim
+        uses: actions/checkout@v4
+        with:
+          repository: "nvim-mini/mini.nvim"
+          path: ".dependencies/mini.nvim"
+      - name: Clone dependencies - telescope.nvim
+        uses: actions/checkout@v4
+        with:
+          repository: "nvim-telescope/telescope.nvim"
+          path: ".dependencies/telescope.nvim"
       - name: Print Version
         run: |
           lua-language-server --version

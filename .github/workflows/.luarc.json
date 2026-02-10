@@ -13,6 +13,9 @@
       "$PWD/.dependencies/busted/library",
       "$PWD/.dependencies/luassert/library",
       "$PWD/.dependencies/luvit-meta/library",
+      "$PWD/.dependencies/mini.nvim",
+      "$PWD/.dependencies/snacks.nvim",
+      "$PWD/.dependencies/telescope.nvim",
       "$VIMRUNTIME",
       "${3rd}/luv/library",
       "${3rd}/busted/library"
