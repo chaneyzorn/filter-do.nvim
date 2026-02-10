@@ -55,7 +55,7 @@
 ---@class filter_do.UIConfig
 ---@field winborder 'none'|'single'|'double'|'rounded'|'solid'|'shadow'|string[]
 ---@field action_keymaps table<string,string>
----@field ui_select 'auto' | 'default' | 'telescope' | 'snacks.picker' | filter_do.UISelectFn
+---@field ui_select 'auto' | 'default' | 'telescope' | 'snacks.picker' | 'mini.pick' | filter_do.UISelectFn
 ---@field show_tpl_as_record boolean
 
 ---@class (partial) filter_do.UserConfig: filter_do.Config

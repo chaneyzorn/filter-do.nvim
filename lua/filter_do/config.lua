@@ -57,11 +57,16 @@ local ui_select_fn_map = {
   ["telescope"] = function()
     return require("filter_do.integration.telescope").ui_select
   end,
+  ["mini.pick"] = function()
+    return require("filter_do.integration.mini_pick").ui_select
+  end,
   ["auto"] = function()
     if pcall(require, "snacks.picker") then
       return require("filter_do.integration.snacks_picker").ui_select
     elseif pcall(require, "telescope") then
       return require("filter_do.integration.telescope").ui_select
+    elseif pcall(require, "mini.pick") then
+      return require("filter_do.integration.mini_pick").ui_select
     else
       return vim.ui.select
     end

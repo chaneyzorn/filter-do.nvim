@@ -193,13 +193,18 @@ function U.with_winfixbuf_disabled(win_id, fn)
   return res
 end
 
+---@param key string
 function U.simplify_key_tips(key)
   key = string.gsub(key, "<([Ll][Oo][Cc][Aa][Ll][Ll][Ee][Aa][Dd][Ee][Rr])>", "<LL>")
   key = string.gsub(key, "<([Ll][Ee][Aa][Dd][Ee][Rr])>", "<L>")
   return key
 end
 
+---@param winid integer
 function U.config_win_fold(winid)
+  if not vim.api.nvim_win_is_valid(winid) then
+    return
+  end
   vim.api.nvim_set_option_value("foldmethod", "marker", { scope = "local", win = winid })
   vim.api.nvim_set_option_value("foldlevel", 0, { scope = "local", win = winid })
   vim.api.nvim_set_option_value("number", true, { scope = "local", win = winid })
