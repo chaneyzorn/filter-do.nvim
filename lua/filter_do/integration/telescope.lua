@@ -13,31 +13,42 @@ local previewers = require("telescope.previewers")
 local conf = require("telescope.config").values
 local actions = require("telescope.actions")
 local action_state = require("telescope.actions.state")
+local utils = require("telescope.utils")
 
 local U = require("filter_do.utils")
 local F = require("filter_do.filter")
 
 local M = {}
 
+local _record_prefix_displayer = entry_display.create({
+  separator = " ",
+  items = {
+    { width = 19 },
+    { width = 10 },
+  },
+})
+
 function M.make_entry(opts)
-  local record_displayer = entry_display.create({
-    separator = " ",
-    items = {
-      { width = 19 },
-      { width = 10 },
-      { remaining = true },
-    },
-  })
   local make_display = function(entry)
     local item = entry.raw
     if item.timestamp and item.sha256sum then
       ---@cast item filter_do.SnippetHistoryRecord
-      local fields = F.snippet_record_display_fields(item)
-      return record_displayer({
-        { fields.time_str, "TelescopeResultsNumber" },
-        { fields.checksum, "TelescopeResultsIdentifier" },
-        { fields.name, "TelescopeResultsVariable" },
+      local ds = F.snippet_record_display_fields(item)
+      local record_str, record_hls = _record_prefix_displayer({
+        { ds.time_str, "TelescopeResultsNumber" },
+        { ds.checksum, "TelescopeResultsIdentifier" },
       })
+
+      local _entry = make_entry.gen_from_file({
+        path_display = function(...)
+          return ds.name
+        end,
+      })(ds.name)
+      local file_str, file_hls = _entry:display()
+
+      local final_str = record_str .. " " .. file_str
+      local sytles = utils.merge_styles(record_hls, file_hls, #record_str + 1)
+      return final_str, sytles
     else
       ---@cast item { path: string }
       local _entry = make_entry.gen_from_file({
