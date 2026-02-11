@@ -161,7 +161,7 @@ function M:_gen_buf_range_footer()
   end
 
   local buf_range = self._state.ctx.buf_range
-  if buf_range.v_char_wised then
+  if buf_range.charwise_visual then
     return {
       { " " },
       { " Visual-Range ", "Visual" },
@@ -503,7 +503,7 @@ function M:highlight_buf_range()
     { buf_range.start_row - 1, buf_range.start_col - 1 },
     { buf_range.end_row - 1, buf_range.end_col - 1 },
     {
-      regtype = buf_range.v_char_wised and "v" or "V",
+      regtype = buf_range.charwise_visual and "v" or "V",
       inclusive = true,
       priority = 1000,
     }

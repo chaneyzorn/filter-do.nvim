@@ -11,7 +11,7 @@ local function get_buf_range_from_cmd(user_cmd)
   ---@type filter_do.BufRange
   local buf_range = {
     bufnr = bufnr,
-    v_char_wised = false,
+    charwise_visual = false,
     undotree_seq = undotree_seq,
     start_row = user_cmd.line1,
     end_row = user_cmd.line2,
@@ -28,7 +28,7 @@ local function get_buf_range_from_cmd(user_cmd)
     if row1 == user_cmd.line1 and row2 == user_cmd.line2 and col2 ~= vim.v.maxcol then
       buf_range = {
         bufnr = bufnr,
-        v_char_wised = true,
+        charwise_visual = true,
         undotree_seq = undotree_seq,
         start_row = user_cmd.line1,
         end_row = user_cmd.line2,

@@ -3,15 +3,11 @@
 --- A collection of types to be included / used in other Lua files.
 ---@module 'filter_do.types'
 
----@alias filter_do.FxCmdName
----| '"Fx"'
----| '"Fxv"'
-
 ---@alias filter_do.EnvKv {[string]:string}
 
 ---@class filter_do.BufRange
 ---@field bufnr integer
----@field v_char_wised boolean
+---@field charwise_visual boolean
 ---@field undotree_seq integer
 ---@field start_row integer 1-based index
 ---@field end_row integer 1-based index

@@ -274,7 +274,7 @@ end
 ---@return integer
 function F:_copy_range_to_new_buf(ctx)
   local lines = {}
-  if ctx.buf_range.v_char_wised then
+  if ctx.buf_range.charwise_visual then
     lines = vim.api.nvim_buf_get_text(
       ctx.buf_range.bufnr,
       ctx.buf_range.start_row - 1,
@@ -302,7 +302,7 @@ end
 ---@return nil
 function F:_set_range_with_buf_text(ctx, src_buf)
   local lines = vim.api.nvim_buf_get_lines(src_buf, 0, -1, false)
-  if ctx.buf_range.v_char_wised then
+  if ctx.buf_range.charwise_visual then
     vim.api.nvim_buf_set_text(
       ctx.buf_range.bufnr,
       ctx.buf_range.start_row - 1,
@@ -363,7 +363,7 @@ function F:exec_filter(ctx, stub_path)
     return false
   end
 
-  if ctx.buf_range.v_char_wised then
+  if ctx.buf_range.charwise_visual then
     local new_buf = self:_copy_range_to_new_buf(ctx)
     local res_code = vim.api.nvim_buf_call(new_buf, function()
       vim.api.nvim_cmd({
