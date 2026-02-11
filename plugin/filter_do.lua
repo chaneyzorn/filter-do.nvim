@@ -32,3 +32,12 @@ end, {
     end
   end,
 })
+
+vim.api.nvim_create_autocmd("VimLeavePre", {
+  group = vim.api.nvim_create_augroup("filter_do.cleanup", { clear = true }),
+  callback = function()
+    local config = require("filter_do.config").get()
+    local keep_num = config.snippet_record_num or 10
+    require("filter_do.filter").clean_all_stubs_and_records(keep_num)
+  end,
+})
