@@ -74,6 +74,12 @@
 ---@field timestamp integer
 ---@field is_tpl boolean
 
+---@class filter_do.UICtxState
+---@field ctx filter_do.FxCtx
+---@field filter filter_do.filter.Filter
+---@field stub_path string
+---@field target_applied boolean
+
 ---@class filter_do.UIEventData
 ---@field state filter_do.UICtxState
 ---@field target_win_id? integer

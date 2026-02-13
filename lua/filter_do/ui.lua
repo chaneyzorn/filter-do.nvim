@@ -26,12 +26,6 @@ end
 ---| "false" share the same scratch file for all contexts
 ---| "auto" default, share the same scratch file if all contexts have the same `tpl_name` and `code_snip_spec`, otherwise use isolated scratch files
 
----@class filter_do.UICtxState
----@field ctx filter_do.FxCtx
----@field filter filter_do.filter.Filter
----@field stub_path string
----@field target_applied boolean
-
 ---@class filter_do.UI
 ---@field private _opts filter_do.UIOpts
 ---@field private _states filter_do.UICtxState[]
