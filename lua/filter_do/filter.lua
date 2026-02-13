@@ -6,7 +6,7 @@ local VIM_PID = tostring(vim.fn.getpid())
 ---@class filter_do.filter.Filter
 ---@field tpl_name string
 ---@field path string
----@field executor filter_do.executors.ExecutorInfo
+---@field executor filter_do.ExecutorInfo
 ---@field private _tpl? {path:string, content:string}
 local F = {}
 F.__index = F

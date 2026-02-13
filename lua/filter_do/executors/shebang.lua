@@ -1,4 +1,4 @@
----@type filter_do.executors.ExecutorInfo
+---@type filter_do.ExecutorInfo
 return {
   pre_action = function(ctx)
     local res = vim.system({ "chmod", "+x", ctx.stub_path }):wait()

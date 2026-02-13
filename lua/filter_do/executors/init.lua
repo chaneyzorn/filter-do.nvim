@@ -1,13 +1,13 @@
 ---@module "filter_do.executors"
 
----@type table<string, filter_do.executors.ExecutorInfo>
+---@type table<string, filter_do.ExecutorInfo>
 local executors = {
   python = require("filter_do.executors.python"),
   nodejs = require("filter_do.executors.nodejs"),
   shebang = require("filter_do.executors.shebang"),
 }
 
----@type table<string, filter_do.executors.ExecutorInfo>
+---@type table<string, filter_do.ExecutorInfo>
 local tpl_exec = {
   ["line.py"] = executors.python,
   ["text.py"] = executors.python,
@@ -17,14 +17,14 @@ local tpl_exec = {
 
 local E = {}
 
----@param custom_executors table<string, filter_do.executors.ExecutorInfo>
+---@param custom_executors table<string, filter_do.ExecutorInfo>
 function E.setup_executors(custom_executors)
   for name, executor in pairs(custom_executors) do
     executors[name] = executor
   end
 end
 
----@param custom_tpl_exec table<string, filter_do.executors.ExecutorInfo|string>
+---@param custom_tpl_exec table<string, filter_do.ExecutorInfo|string>
 function E.setup_tpl_exec(custom_tpl_exec)
   for tpl_name, executor in pairs(custom_tpl_exec) do
     if type(executor) == "string" then
@@ -39,7 +39,7 @@ function E.setup_tpl_exec(custom_tpl_exec)
 end
 
 ---@param tpl_name string
----@return filter_do.executors.ExecutorInfo
+---@return filter_do.ExecutorInfo
 function E.get_executor(tpl_name)
   local cfg = require("filter_do.config").get()
   if cfg.get_executor then

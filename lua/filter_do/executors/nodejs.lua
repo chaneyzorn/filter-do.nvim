@@ -1,4 +1,4 @@
----@type filter_do.executors.ExecutorInfo
+---@type filter_do.ExecutorInfo
 return {
   pre_action = function(ctx)
     return ctx

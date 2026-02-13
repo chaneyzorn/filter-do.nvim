@@ -29,21 +29,21 @@
 ---@field edit_scratch boolean
 ---@field envs filter_do.EnvKv
 
----@class filter_do.executors.ExecutorCtx
+---@class filter_do.ExecutorCtx
 ---@field fx_ctx filter_do.FxCtx a copy of the original FxCtx, should be readonly
 ---@field envs filter_do.EnvKv contains envs from fx_ctx.envs, can be modified
 ---@field stub_path string
 ---@field user_data table
 
----@class filter_do.executors.ExecutorInfo
----@field pre_action fun(ctx:filter_do.executors.ExecutorCtx):filter_do.executors.ExecutorCtx|nil
----@field filter_cmd fun(ctx:filter_do.executors.ExecutorCtx):string[]|nil
+---@class filter_do.ExecutorInfo
+---@field pre_action fun(ctx:filter_do.ExecutorCtx):filter_do.ExecutorCtx|nil
+---@field filter_cmd fun(ctx:filter_do.ExecutorCtx):string[]|nil
 
 ---@class filter_do.Config
 ---@field snippet_record_num integer
----@field executors table<string, filter_do.executors.ExecutorInfo>
----@field tpl_exec table<string, string|filter_do.executors.ExecutorInfo>
----@field get_executor? fun(tpl_name:string):nil|string|filter_do.executors.ExecutorInfo
+---@field executors table<string, filter_do.ExecutorInfo>
+---@field tpl_exec table<string, string|filter_do.ExecutorInfo>
+---@field get_executor? fun(tpl_name:string):nil|string|filter_do.ExecutorInfo
 ---@field default_envs? fun(ctx:filter_do.FxCtx):filter_do.EnvKv
 ---@field ui filter_do.UIConfig
 
