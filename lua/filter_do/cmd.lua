@@ -66,7 +66,6 @@ local function parse_fx_cmd_ctx(user_cmd)
 
   local code_snip_spec = get_code_snip_spec_from_cmd(user_cmd)
   local buf_range = get_buf_range_from_cmd(user_cmd)
-  local env = U.default_env_from_buf_range(buf_range)
 
   ---@type filter_do.FxCtx
   local ctx = {
@@ -74,8 +73,10 @@ local function parse_fx_cmd_ctx(user_cmd)
     code_snip_spec = code_snip_spec,
     edit_scratch = edit_scratch,
     buf_range = buf_range,
-    env = env,
+    envs = {},
   }
+
+  ctx.envs = U.default_envs(ctx)
   return ctx
 end
 

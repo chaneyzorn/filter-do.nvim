@@ -8,6 +8,7 @@ local defaults = {
   executors = {},
   tpl_exec = {},
   get_executor = nil,
+  default_envs = nil,
   ui = {
     ui_select = "auto",
     show_tpl_as_record = true,

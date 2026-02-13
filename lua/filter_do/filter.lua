@@ -347,7 +347,7 @@ function F:exec_filter(ctx, stub_path)
   local executor_ctx = self.executor.pre_action({
     stub_path = stub_path,
     fx_ctx = vim.deepcopy(ctx),
-    env = vim.deepcopy(ctx.env),
+    envs = vim.deepcopy(ctx.envs),
     user_data = {},
   })
   if not executor_ctx then
@@ -368,7 +368,7 @@ function F:exec_filter(ctx, stub_path)
     local res_code = vim.api.nvim_buf_call(new_buf, function()
       vim.api.nvim_cmd({
         cmd = "!",
-        args = { U.env_kv_str(executor_ctx.env), unpack(filter_cmd) },
+        args = { U.env_kv_str(executor_ctx.envs), unpack(filter_cmd) },
         range = { 1, vim.api.nvim_buf_line_count(new_buf) },
       }, {})
       local res_code = vim.v.shell_error
@@ -397,7 +397,7 @@ function F:exec_filter(ctx, stub_path)
   return vim.api.nvim_buf_call(ctx.buf_range.bufnr, function()
     vim.api.nvim_cmd({
       cmd = "!",
-      args = { U.env_kv_str(executor_ctx.env), unpack(filter_cmd) },
+      args = { U.env_kv_str(executor_ctx.envs), unpack(filter_cmd) },
       range = { ctx.buf_range.start_row, ctx.buf_range.end_row },
     }, {})
     local res_code = vim.v.shell_error

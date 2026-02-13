@@ -27,11 +27,11 @@
 ---@field tpl_name string
 ---@field code_snip_spec filter_do.CodeSnipSpec
 ---@field edit_scratch boolean
----@field env filter_do.EnvKv
+---@field envs filter_do.EnvKv
 
 ---@class filter_do.executors.ExecutorCtx
 ---@field fx_ctx filter_do.FxCtx a copy of the original FxCtx, should be readonly
----@field env filter_do.EnvKv contains envs from fx_ctx.env, can be modified
+---@field envs filter_do.EnvKv contains envs from fx_ctx.envs, can be modified
 ---@field stub_path string
 ---@field user_data table
 
@@ -44,6 +44,7 @@
 ---@field executors table<string, filter_do.executors.ExecutorInfo>
 ---@field tpl_exec table<string, string|filter_do.executors.ExecutorInfo>
 ---@field get_executor? fun(tpl_name:string):nil|string|filter_do.executors.ExecutorInfo
+---@field default_envs? fun(ctx:filter_do.FxCtx):filter_do.EnvKv
 ---@field ui filter_do.UIConfig
 
 ---@alias filter_do.UISelectFn fun(items:any[], opts:table, on_choice:fun(item:any|nil, idx:integer|nil))
@@ -59,12 +60,11 @@
 ---@class (partial) filter_do.FxCtxOpts: filter_do.FxCtx
 
 ---@class filter_do.api.FxCtxGetter
----@field get_buf_range fun():filter_do.BufRange
+---@field get_buf_range fun():filter_do.BufRange | nil
 ---@field select_tpl fun():string | nil
 ---@field get_code_snip_spec fun(tpl_name:string):filter_do.CodeSnipSpec | nil
 ---@field edit_before_apply fun():boolean
----@field get_env fun(buf_range:filter_do.BufRange):filter_do.EnvKv
----@field opts filter_do.FxCtxOpts
+---@field get_envs fun(ctx:filter_do.FxCtx):filter_do.EnvKv
 
 ---@class filter_do.SnippetHistoryRecord
 ---@field tpl_name string

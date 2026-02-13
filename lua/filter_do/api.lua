@@ -71,33 +71,30 @@ end
 ---@param ctx_getter filter_do.api.FxCtxGetter
 ---@return filter_do.FxCtx | nil
 local function get_ctx_from_getter(ctx_getter)
-  local opts = ctx_getter.opts or {}
-
-  local buf_range = opts.buf_range or ctx_getter.get_buf_range()
+  local buf_range = ctx_getter.get_buf_range()
   if not buf_range then
     return nil
   end
-  local tpl_name = opts.tpl_name or ctx_getter.select_tpl()
+  local tpl_name = ctx_getter.select_tpl()
   if not tpl_name then
     return nil
   end
-  local code_snip_spec = opts.code_snip_spec or ctx_getter.get_code_snip_spec(tpl_name)
+  local code_snip_spec = ctx_getter.get_code_snip_spec(tpl_name)
   if not code_snip_spec then
     return nil
   end
-
-  local edit_scratch = opts.edit_scratch or ctx_getter.edit_before_apply()
-  local env = opts.env or ctx_getter.get_env(buf_range) or {}
-  env = vim.tbl_extend("keep", env, U.default_env_from_buf_range(buf_range))
-
+  local edit_scratch = ctx_getter.edit_before_apply()
   ---@type filter_do.FxCtx
   local ctx = {
     buf_range = buf_range,
     tpl_name = tpl_name,
     code_snip_spec = code_snip_spec,
     edit_scratch = edit_scratch,
-    env = env,
+    envs = {},
   }
+  local getter_envs = ctx_getter.get_envs(ctx) or {}
+  local defaut_envs = U.default_envs(ctx)
+  ctx.envs = vim.tbl_deep_extend("force", defaut_envs, getter_envs)
   return ctx
 end
 
@@ -122,9 +119,15 @@ function M.select_filter_do(opts)
   ---@type filter_do.api.FxCtxGetter
   local ctx_getter = {
     get_buf_range = function()
+      if opts and opts.buf_range then
+        return opts.buf_range
+      end
       return U.get_current_buffer_range()
     end,
     select_tpl = function()
+      if opts and opts.tpl_name then
+        return opts.tpl_name
+      end
       ---@type { tpl_name: string, path: string } | nil
       local filter = Async.ui_select(M.list_filters(), {
         prompt = "filter-do.nvim: Select a filter template",
@@ -135,6 +138,9 @@ function M.select_filter_do(opts)
       return filter and filter.tpl_name
     end,
     get_code_snip_spec = function(tpl_name)
+      if opts and opts.code_snip_spec then
+        return opts.code_snip_spec
+      end
       ---@type filter_do.SnippetHistoryRecord | nil
       local record = Async.ui_select(M.list_history_by_tpl(tpl_name, "desc", Cfg.ui.show_tpl_as_record), {
         prompt = "filter-do.nvim: Select a snippet history record",
@@ -145,12 +151,17 @@ function M.select_filter_do(opts)
       return record and { type = "exist_path", value = record.path }
     end,
     edit_before_apply = function()
+      if opts and opts.edit_scratch ~= nil then
+        return opts.edit_scratch
+      end
       return true
     end,
-    get_env = function(buf_range)
-      return U.default_env_from_buf_range(buf_range)
+    get_envs = function(ctx)
+      if opts and opts.envs then
+        return opts.envs
+      end
+      return ctx.envs or {}
     end,
-    opts = opts or {},
   }
 
   return M.filter_do_wrapper(ctx_getter)

@@ -17,11 +17,11 @@ function U.msg_err(msg)
   vim.notify(msg, vim.log.levels.ERROR)
 end
 
----@param env filter_do.EnvKv
+---@param envs filter_do.EnvKv
 ---@return string
-function U.env_kv_str(env)
+function U.env_kv_str(envs)
   local res = {}
-  for k, v in pairs(env) do
+  for k, v in pairs(envs) do
     table.insert(res, string.format("%s=%s", k, v))
   end
   table.sort(res)
@@ -107,15 +107,24 @@ function U.get_current_buffer_range()
   return buf_range
 end
 
+---@param ctx filter_do.FxCtx
+---@return filter_do.EnvKv
+function U.default_envs(ctx)
+  local cfg = require("filter_do.config").get()
+  local default_buf_envs = U.default_envs_from_buf_range(ctx.buf_range)
+  local default_cfg_envs = cfg.default_envs and cfg.default_envs(ctx) or {}
+  return vim.tbl_deep_extend("force", default_buf_envs, default_cfg_envs, ctx.envs)
+end
+
 ---@param buf_range filter_do.BufRange
 ---@return filter_do.EnvKv
-function U.default_env_from_buf_range(buf_range)
-  local env = {
+function U.default_envs_from_buf_range(buf_range)
+  local envs = {
     START_ROW = string.format("%s", buf_range.start_row),
     END_ROW = string.format("%s", buf_range.end_row),
     FX_LOG = U.get_log_path(),
   }
-  return env
+  return envs
 end
 
 ---@param sub_path string|nil
