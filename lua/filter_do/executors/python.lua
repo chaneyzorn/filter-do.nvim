@@ -1,8 +1,5 @@
 ---@type filter_do.ExecutorInfo
 return {
-  pre_action = function(ctx)
-    return ctx
-  end,
   filter_cmd = function(ctx)
     local py3 = vim.g.python3_host_prog or vim.fn.exepath("python3")
     if py3 == "" or py3 == nil then

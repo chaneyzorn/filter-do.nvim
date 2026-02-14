@@ -36,8 +36,9 @@
 ---@field user_data table
 
 ---@class filter_do.ExecutorInfo
----@field pre_action fun(ctx:filter_do.ExecutorCtx):filter_do.ExecutorCtx|nil
+---@field pre_action? fun(ctx:filter_do.ExecutorCtx):filter_do.ExecutorCtx|nil
 ---@field filter_cmd fun(ctx:filter_do.ExecutorCtx):string[]|nil
+---@field post_action? fun(ctx:filter_do.ExecutorCtx)
 
 ---@class filter_do.Config
 ---@field snippet_record_num integer

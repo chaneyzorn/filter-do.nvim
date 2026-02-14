@@ -344,12 +344,21 @@ function F:exec_filter(ctx, stub_path)
     return false
   end
 
-  local executor_ctx = self.executor.pre_action({
+  ---@type filter_do.ExecutorCtx | nil
+  local executor_ctx = {
     stub_path = stub_path,
     fx_ctx = vim.deepcopy(ctx),
     envs = vim.deepcopy(ctx.envs),
     user_data = {},
-  })
+  }
+  if self.executor.pre_action then
+    executor_ctx = self.executor.pre_action({
+      stub_path = stub_path,
+      fx_ctx = vim.deepcopy(ctx),
+      envs = vim.deepcopy(ctx.envs),
+      user_data = {},
+    })
+  end
   if not executor_ctx then
     local err_msg = string.format("filter_do.nvim: pre_action failed for filter %s", self.tpl_name)
     U.msg_err(err_msg)
@@ -363,61 +372,54 @@ function F:exec_filter(ctx, stub_path)
     return false
   end
 
+  local res_code = -99
   if ctx.buf_range.charwise_visual then
     local new_buf = self:_copy_range_to_new_buf(ctx)
-    local res_code = vim.api.nvim_buf_call(new_buf, function()
+    res_code = vim.api.nvim_buf_call(new_buf, function()
       vim.api.nvim_cmd({
         cmd = "!",
         args = { U.env_kv_str(executor_ctx.envs), unpack(filter_cmd) },
         range = { 1, vim.api.nvim_buf_line_count(new_buf) },
       }, {})
-      local res_code = vim.v.shell_error
-      if res_code ~= 0 then
-        U.msg_err(string.format("filter_do.nvim: %s failed with code %s", self.tpl_name, res_code))
-      end
-      return res_code
+      local _res_code = vim.v.shell_error
+      return _res_code
     end)
     if res_code == 0 then
       self:_set_range_with_buf_text(ctx, new_buf)
-      self:save_stub_as_record(stub_path)
     end
     vim.api.nvim_buf_delete(new_buf, { force = true })
-
-    U.trigger_user_cmd("ExecPost", {
-      executor_ctx = executor_ctx,
-      filter_cmd = filter_cmd,
-      shell_code = res_code,
-    })
-    if orphan_stub then
-      os.remove(stub_path)
-    end
-    return res_code == 0
+  else
+    res_code = vim.api.nvim_buf_call(ctx.buf_range.bufnr, function()
+      vim.api.nvim_cmd({
+        cmd = "!",
+        args = { U.env_kv_str(executor_ctx.envs), unpack(filter_cmd) },
+        range = { ctx.buf_range.start_row, ctx.buf_range.end_row },
+      }, {})
+      local _res_code = vim.v.shell_error
+      return _res_code
+    end)
   end
 
-  return vim.api.nvim_buf_call(ctx.buf_range.bufnr, function()
-    vim.api.nvim_cmd({
-      cmd = "!",
-      args = { U.env_kv_str(executor_ctx.envs), unpack(filter_cmd) },
-      range = { ctx.buf_range.start_row, ctx.buf_range.end_row },
-    }, {})
-    local res_code = vim.v.shell_error
-    if res_code ~= 0 then
-      U.msg_err(string.format("filter_do.nvim: %s failed with code %s", self.tpl_name, res_code))
-    end
-    if res_code == 0 then
-      self:save_stub_as_record(stub_path)
-    end
+  if self.executor.post_action then
+    self.executor.post_action(executor_ctx)
+  end
 
-    U.trigger_user_cmd("ExecPost", {
-      executor_ctx = executor_ctx,
-      filter_cmd = filter_cmd,
-      shell_code = res_code,
-    })
-    if orphan_stub then
-      os.remove(stub_path)
-    end
-    return res_code == 0
-  end)
+  if res_code ~= 0 then
+    U.msg_err(string.format("filter_do.nvim: %s failed with code %s", self.tpl_name, res_code))
+  end
+  if res_code == 0 then
+    self:save_stub_as_record(stub_path)
+  end
+
+  U.trigger_user_cmd("ExecPost", {
+    executor_ctx = executor_ctx,
+    filter_cmd = filter_cmd,
+    shell_code = res_code,
+  })
+  if orphan_stub then
+    os.remove(stub_path)
+  end
+  return res_code == 0
 end
 
 ---@param stub_path string
