@@ -4,19 +4,19 @@
 Table of Contents                                *filter-do-table-of-contents*
 
 1. filter-do.nvim                                   |filter-do-filter-do.nvim|
-  - TL;DR                                     |filter-do-filter-do.nvim-tl;dr|
-  - Features                               |filter-do-filter-do.nvim-features|
-  - Installation                       |filter-do-filter-do.nvim-installation|
-  - Configuration                     |filter-do-filter-do.nvim-configuration|
-  - Vim Ex Commands                 |filter-do-filter-do.nvim-vim-ex-commands|
-  - Built-in Templates           |filter-do-filter-do.nvim-built-in-templates|
-  - User Examples                     |filter-do-filter-do.nvim-user-examples|
-  - API                                         |filter-do-filter-do.nvim-api|
-  - User Events                         |filter-do-filter-do.nvim-user-events|
-  - Writing Custom Filter Templates|filter-do-filter-do.nvim-writing-custom-filter-templates|
-  - Todo                                       |filter-do-filter-do.nvim-todo|
-  - Notes                                     |filter-do-filter-do.nvim-notes|
-  - Acknowledgments                 |filter-do-filter-do.nvim-acknowledgments|
+  - TL;DR                                                    |filter-do-tl;dr|
+  - Features                                              |filter-do-features|
+  - Installation                                      |filter-do-installation|
+  - Configuration                                    |filter-do-configuration|
+  - Vim Ex Commands                                |filter-do-vim-ex-commands|
+  - Built-in Templates                          |filter-do-built-in-templates|
+  - User Examples                                    |filter-do-user-examples|
+  - API                                                        |filter-do-api|
+  - User Events                                        |filter-do-user-events|
+  - Writing Custom Filter Templates|filter-do-writing-custom-filter-templates|
+  - Todo                                                      |filter-do-todo|
+  - Notes                                                    |filter-do-notes|
+  - Acknowledgments                                |filter-do-acknowledgments|
 
 ==============================================================================
 1. filter-do.nvim                                   *filter-do-filter-do.nvim*
@@ -25,7 +25,7 @@ A |`:!filter`| script manager that helps you process text in vim buffers using
 your favorite programming languages.
 
 
-TL;DR                                         *filter-do-filter-do.nvim-tl;dr*
+TL;DR                                                        *filter-do-tl;dr*
 
 In vim, you can use the |`:pydo`|, |`:rubydo`|, |`:perldo`|, |`:luado`| series
 of commands to process lines of text in vim buffers:
@@ -59,7 +59,7 @@ Now you can edit text with your favorite language before you fully master vim
 regexp.
 
 
-FEATURES                                   *filter-do-filter-do.nvim-features*
+FEATURES                                                  *filter-do-features*
 
 - Write filter templates in any programming language you like, including those requiring compilation steps;
 - Filter templates can be used directly as regular filters;
@@ -74,7 +74,7 @@ FEATURES                                   *filter-do-filter-do.nvim-features*
 - UI: Automatically enters batch mode when used with :bufdo etc., works out of the box;
 
 
-INSTALLATION                           *filter-do-filter-do.nvim-installation*
+INSTALLATION                                          *filter-do-installation*
 
 - lazy.nvim <https://github.com/folke/lazy.nvim>
 
@@ -88,7 +88,7 @@ INSTALLATION                           *filter-do-filter-do.nvim-installation*
 <
 
 
-CONFIGURATION                         *filter-do-filter-do.nvim-configuration*
+CONFIGURATION                                        *filter-do-configuration*
 
 All configuration options and their default values:
 
@@ -140,7 +140,7 @@ See subsequent sections to learn how to write your own filter templates and
 specify custom interpreters for scripts (optional).
 
 
-VIM EX COMMANDS                     *filter-do-filter-do.nvim-vim-ex-commands*
+VIM EX COMMANDS                                    *filter-do-vim-ex-commands*
 
 >ex
     :[range]Fx <filter_template>[-][+] [user_code]
@@ -162,7 +162,7 @@ and cannot be used as a template name. More subcommands may be added in future
 versions.
 
 
-BUILT-IN TEMPLATES               *filter-do-filter-do.nvim-built-in-templates*
+BUILT-IN TEMPLATES                              *filter-do-built-in-templates*
 
 Built-in templates are located in the `filter-do.nvim/fxtpl/` directory.
 
@@ -227,7 +227,7 @@ Built-in templates are located in the `filter-do.nvim/fxtpl/` directory.
 <
 
 
-USER EXAMPLES                         *filter-do-filter-do.nvim-user-examples*
+USER EXAMPLES                                        *filter-do-user-examples*
 
 - **case-1**: Edit buffer text with Ex command
 
@@ -282,7 +282,7 @@ USER EXAMPLES                         *filter-do-filter-do.nvim-user-examples*
 See: `example/fxtpl/conway_game_of_life.py`
 
 
-API                                             *filter-do-filter-do.nvim-api*
+API                                                            *filter-do-api*
 
 >lua
     local api = require("filter_do.api")
@@ -365,7 +365,7 @@ You can map the API to a keybinding:
 <
 
 
-USER EVENTS                             *filter-do-filter-do.nvim-user-events*
+USER EVENTS                                            *filter-do-user-events*
 
 During filter-do execution:
 
@@ -426,7 +426,7 @@ For example, use User events to disable `winbar` in UI windows:
 <
 
 
-WRITING CUSTOM FILTER TEMPLATES*filter-do-filter-do.nvim-writing-custom-filter-templates*
+WRITING CUSTOM FILTER TEMPLATES    *filter-do-writing-custom-filter-templates*
 
 A filter program reads text from stdin, processes it, and outputs the result to
 stdout.
@@ -565,7 +565,7 @@ Compiled languages (e.g., Go) are also supported:
 <
 
 
-TODO                                           *filter-do-filter-do.nvim-todo*
+TODO                                                          *filter-do-todo*
 
 - Update types documentation
 - Support more executors
@@ -576,7 +576,7 @@ TODO                                           *filter-do-filter-do.nvim-todo*
 - Support the Windows platform
 
 
-NOTES                                         *filter-do-filter-do.nvim-notes*
+NOTES                                                        *filter-do-notes*
 
 filter-do.nvim only modifies target buffer content and does not automatically
 write changes to files. You can use vim’s built-in undo to revert changes.
@@ -585,7 +585,7 @@ Nevertheless, please exercise caution with valuable data—this project
 provides no warranty against data loss.
 
 
-ACKNOWLEDGMENTS                     *filter-do-filter-do.nvim-acknowledgments*
+ACKNOWLEDGMENTS                                    *filter-do-acknowledgments*
 
 - |pydo|: A convenient built-in command (despite limitations) that inspired this project;
 - skywind3000/vim-text-process <https://github.com/skywind3000/vim-text-process>: Another filter manager that inspired the scope of this plugin;

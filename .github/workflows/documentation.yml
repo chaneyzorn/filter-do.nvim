@@ -26,6 +26,7 @@ jobs:
           version: "Neovim >= 0.8.0"
           demojify: true
           treesitter: true
+          dedupsubheadings: false
       - name: Generate Tags
         run: |
           nvim -c 'helptags doc' -c 'quit'
