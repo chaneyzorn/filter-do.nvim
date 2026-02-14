@@ -450,14 +450,14 @@ function M:open_ui()
     return
   end
 
-  U.trigger_user_cmd("OpenPre", self:_event_data())
+  U.trigger_user_cmd("UIOpenPre", self:_event_data())
 
   -- record current window before creating floating windows
   self._pwin = vim.api.nvim_get_current_win()
   -- switch to scratch_win_id
   self:_init_ui()
 
-  U.trigger_user_cmd("OpenPost", self:_event_data())
+  U.trigger_user_cmd("UIOpenPost", self:_event_data())
 end
 
 ---@param move_cursor boolean
@@ -513,7 +513,7 @@ function M:clear_buf_range_highlight(buf_range)
 end
 
 function M:action_apply()
-  U.trigger_user_cmd("ApplyPre", self:_event_data())
+  U.trigger_user_cmd("UIApplyPre", self:_event_data())
 
   if self._state.target_applied then
     U.msg_warn("filter-do.nvim: Undo previous apply before applying again")
@@ -535,11 +535,11 @@ function M:action_apply()
   self._state.filter:exec_filter(self._state.ctx, self._state.stub_path)
   self:_refresh_ui()
 
-  U.trigger_user_cmd("ApplyPost", self:_event_data())
+  U.trigger_user_cmd("UIApplyPost", self:_event_data())
 end
 
 function M:action_undo()
-  U.trigger_user_cmd("UndoPre", self:_event_data())
+  U.trigger_user_cmd("UIUndoPre", self:_event_data())
 
   if not self._state.target_applied then
     U.msg_warn("filter-do.nvim: No apply action to undo")
@@ -552,11 +552,11 @@ function M:action_undo()
   self._state.target_applied = false
   self:_refresh_ui()
 
-  U.trigger_user_cmd("UndoPost", self:_event_data())
+  U.trigger_user_cmd("UIUndoPost", self:_event_data())
 end
 
 function M:action_history()
-  U.trigger_user_cmd("HistoryPre", self:_event_data())
+  U.trigger_user_cmd("UIHistoryPre", self:_event_data())
 
   C.ui_select_fn(self._state.filter:list_history_records("desc", Cfg.ui.show_tpl_as_record), {
     prompt = "filter-do.nvim: Select a snippet history record",
@@ -575,23 +575,23 @@ function M:action_history()
       os.remove(origin_stub)
     end
 
-    U.trigger_user_cmd("HistoryPost", self:_event_data())
+    U.trigger_user_cmd("UIHistoryPost", self:_event_data())
   end)
 end
 
 function M:action_close()
-  U.trigger_user_cmd("ClosePre", self:_event_data())
+  U.trigger_user_cmd("UIClosePre", self:_event_data())
 
   vim.api.nvim_buf_call(self._scratch_buf_id, function()
     vim.cmd.update()
   end)
   vim.api.nvim_win_close(self._scratch_win_id, true)
 
-  U.trigger_user_cmd("ClosePost", self:_event_data())
+  U.trigger_user_cmd("UIClosePost", self:_event_data())
 end
 
 function M:action_previous()
-  U.trigger_user_cmd("PreviousPre", self:_event_data())
+  U.trigger_user_cmd("UIPreviousPre", self:_event_data())
 
   -- cycle to previous state
   self._sindex = self._sindex - 1
@@ -601,11 +601,11 @@ function M:action_previous()
   self._state = self._states[self._sindex]
   self:_refresh_ui()
 
-  U.trigger_user_cmd("PreviousPost", self:_event_data())
+  U.trigger_user_cmd("UIPreviousPost", self:_event_data())
 end
 
 function M:action_next()
-  U.trigger_user_cmd("NextPre", self:_event_data())
+  U.trigger_user_cmd("UINextPre", self:_event_data())
 
   -- cycle to next state
   self._sindex = self._sindex + 1
@@ -615,7 +615,7 @@ function M:action_next()
   self._state = self._states[self._sindex]
   self:_refresh_ui()
 
-  U.trigger_user_cmd("NextPost", self:_event_data())
+  U.trigger_user_cmd("UINextPost", self:_event_data())
 end
 
 function M:_config_scratch_buf()
@@ -740,7 +740,7 @@ function M:_config_float_win()
 end
 
 function M:action_preview_diff()
-  U.trigger_user_cmd("PreviewPre", self:_event_data())
+  U.trigger_user_cmd("UIPreviewPre", self:_event_data())
 
   if self._state.target_applied then
     U.msg_warn("filter-do.nvim: Undo previous apply before previewing diff")
@@ -789,11 +789,11 @@ function M:action_preview_diff()
     vim.cmd.diffthis()
   end)
 
-  U.trigger_user_cmd("PreviewPost", self:_event_data())
+  U.trigger_user_cmd("UIPreviewPost", self:_event_data())
 end
 
 function M:action_back()
-  U.trigger_user_cmd("BackPre", self:_event_data())
+  U.trigger_user_cmd("UIBackPre", self:_event_data())
 
   -- clear all diff related options in all wins in the current tabpage
   vim.cmd.diffoff({ bang = true })
@@ -802,7 +802,7 @@ function M:action_back()
   self:_refresh_ui()
   vim.api.nvim_buf_delete(preview_buf_id, { force = true })
 
-  U.trigger_user_cmd("BackPost", self:_event_data())
+  U.trigger_user_cmd("UIBackPost", self:_event_data())
 end
 
 function M:_config_preview_buf()

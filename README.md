@@ -343,24 +343,24 @@ During filter-do execution:
 
 During UI interaction:
 
-- **FxOpenPre**: Before opening UI window
-- **FxOpenPost**: After opening UI window
-- **FxApplyPre**: Before applying filter script
-- **FxApplyPost**: After applying filter script
-- **FxUndoPre**: Before undoing application
-- **FxUndoPost**: After undoing application
-- **FxHistoryPre**: Before selecting historical record
-- **FxHistoryPost**: After selecting historical record
-- **FxClosePre**: Before closing UI window
-- **FxClosePost**: After closing UI window
-- **FxPreviousPre**: Before selecting previous buffer in batch mode
-- **FxPreviousPost**: After selecting previous buffer in batch mode
-- **FxNextPre**: Before selecting next buffer in batch mode
-- **FxNextPost**: After selecting next buffer in batch mode
-- **FxPreviewPre**: Before opening preview mode
-- **FxPreviewPost**: After opening preview mode
-- **FxBackPre**: Before returning from preview mode
-- **FxBackPost**: After returning from preview mode
+- **FxUIOpenPre**: Before opening UI window
+- **FxUIOpenPost**: After opening UI window
+- **FxUIApplyPre**: Before applying filter script
+- **FxUIApplyPost**: After applying filter script
+- **FxUIUndoPre**: Before undoing application
+- **FxUIUndoPost**: After undoing application
+- **FxUIHistoryPre**: Before selecting historical record
+- **FxUIHistoryPost**: After selecting historical record
+- **FxUIClosePre**: Before closing UI window
+- **FxUIClosePost**: After closing UI window
+- **FxUIPreviousPre**: Before selecting previous buffer in batch mode
+- **FxUIPreviousPost**: After selecting previous buffer in batch mode
+- **FxUINextPre**: Before selecting next buffer in batch mode
+- **FxUINextPost**: After selecting next buffer in batch mode
+- **FxUIPreviewPre**: Before opening preview mode
+- **FxUIPreviewPost**: After opening preview mode
+- **FxUIBackPre**: Before returning from preview mode
+- **FxUIBackPost**: After returning from preview mode
 
 The `event.data` structure for the above events is as follows:
 
@@ -377,7 +377,7 @@ For example, use User events to disable `winbar` in UI windows:
 
 ```lua
 vim.api.nvim_create_autocmd("User", {
-  pattern = { "FxOpenPost", "FxPreviousPost", "FxNextPost" },
+  pattern = { "FxUIOpenPost", "FxUIPreviousPost", "FxUINextPost" },
   callback = function(event)
     vim.api.nvim_set_option_value("winbar", "", { scope = "local", win = event.data.target_win_id })
   end,
