@@ -1,8 +1,15 @@
 xdo-filter-do.nvim	xdo.txt	/*xdo-filter-do.nvim*
-xdo-filter-do.nvim-commands	xdo.txt	/*xdo-filter-do.nvim-commands*
+xdo-filter-do.nvim-acknowledgments	xdo.txt	/*xdo-filter-do.nvim-acknowledgments*
+xdo-filter-do.nvim-api	xdo.txt	/*xdo-filter-do.nvim-api*
+xdo-filter-do.nvim-built-in-templates	xdo.txt	/*xdo-filter-do.nvim-built-in-templates*
 xdo-filter-do.nvim-configuration	xdo.txt	/*xdo-filter-do.nvim-configuration*
-xdo-filter-do.nvim-credit	xdo.txt	/*xdo-filter-do.nvim-credit*
 xdo-filter-do.nvim-features	xdo.txt	/*xdo-filter-do.nvim-features*
 xdo-filter-do.nvim-installation	xdo.txt	/*xdo-filter-do.nvim-installation*
+xdo-filter-do.nvim-notes	xdo.txt	/*xdo-filter-do.nvim-notes*
+xdo-filter-do.nvim-tl;dr	xdo.txt	/*xdo-filter-do.nvim-tl;dr*
+xdo-filter-do.nvim-todo	xdo.txt	/*xdo-filter-do.nvim-todo*
+xdo-filter-do.nvim-user-events	xdo.txt	/*xdo-filter-do.nvim-user-events*
+xdo-filter-do.nvim-user-examples	xdo.txt	/*xdo-filter-do.nvim-user-examples*
+xdo-filter-do.nvim-vim-ex-commands	xdo.txt	/*xdo-filter-do.nvim-vim-ex-commands*
 xdo-table-of-contents	xdo.txt	/*xdo-table-of-contents*
 xdo.txt	xdo.txt	/*xdo.txt*
