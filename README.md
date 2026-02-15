@@ -2,6 +2,8 @@
 
 A [`:!filter`](https://neovim.io/doc/user/change.html#filter) script manager that helps you process text in vim buffers using your favorite programming languages.
 
+<https://github.com/user-attachments/assets/484adc65-a89c-4811-9954-b24aa9dff6a7>
+
 > **Note**
 > This project is in alpha stage — bugs and breaking changes may occur. filter-do.nvim only modifies target buffer content (no auto-save to files); use Vim's built-in undo to revert changes. Exercise caution with valuable data, as no warranty is provided against data loss.
 
@@ -264,8 +266,10 @@ async function handleBlock(text) {
 
 ```vim
 :enew | while 1 | silent Fx conway_game_of_life.py
-:  redraw | sleep 100m | endwhile
+:  redraw | sleep 50m | endwhile
 ```
+
+<https://github.com/user-attachments/assets/816aef72-967e-4c1c-89d9-d79606d9a69f>
 
 Press Ctrl-C to abort execution. No difference from the built-in `:!filter`—just a demo for fun.
 
