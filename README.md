@@ -2,6 +2,9 @@
 
 A [`:!filter`](https://neovim.io/doc/user/change.html#filter) script manager that helps you process text in vim buffers using your favorite programming languages.
 
+> **Note**
+> This project is in alpha stage — bugs and breaking changes may occur. filter-do.nvim only modifies target buffer content (no auto-save to files); use Vim's built-in undo to revert changes. Exercise caution with valuable data, as no warranty is provided against data loss.
+
 - [filter-do.nvim](#filter-donvim)
   - [TLDR](#tldr)
     - [Why?](#why)
@@ -19,7 +22,6 @@ A [`:!filter`](https://neovim.io/doc/user/change.html#filter) script manager tha
     - [Filter Template Files](#filter-template-files)
     - [Custom Interpreter Environments](#custom-interpreter-environments)
   - [Todo](#todo)
-  - [Notes](#notes)
   - [Acknowledgments](#acknowledgments)
 
 ## TLDR
@@ -133,10 +135,10 @@ See subsequent sections to learn how to write your own filter templates and spec
 ```
 
 - `[range]`: Optional, handled automatically by vim [`:h cmdline-ranges`](https://neovim.io/doc/user/cmdline.html#cmdline-ranges); additionally recognizes column ranges from [`:h charwise-visual`](https://neovim.io/doc/user/visual.html#charwise-visual);
-- `<filter_template>`: Required, sourced from `<vim_runtime>/fxtpl/*` (e.g., `~/.config/nvim/fxtpl/your_own_template.suffix`);
+- `<filter_template>`: Required, sourced from `<vim_runtime>/fxtpl/*` (e.g., `your_own_template.suffix` from `~/.config/nvim/fxtpl/*`);
 - `[user_code]`: Optional, custom code that combines with `<filter_template>` to generate a script for `:!filter`; if not specified, the original template content is used directly;
 - `[-]`: Optional modifier, uses the previous `[user_code]` (no need to re-enter code);
-- `[+]`: Optional modifier, opens an independent window to edit the script (supports multi-line `[user_code]`);
+- `[+]`: Optional modifier, opens an independent window to edit the script (supports writing multi-line codes);
 
 ### Subcommands
 
@@ -576,12 +578,6 @@ require("filter_do").setup({
 - Add async spinner in UI during execution
 - Create highlight group
 - Support the Windows platform
-
-## Notes
-
-filter-do.nvim only modifies target buffer content and does not automatically write changes to files. You can use vim's built-in undo to revert changes.
-
-Nevertheless, please exercise caution with valuable data—this project provides no warranty against data loss.
 
 ## Acknowledgments
 
