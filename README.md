@@ -384,6 +384,22 @@ vim.api.nvim_create_autocmd("User", {
 })
 ```
 
+## Custom Environment Variables
+
+You can customize the default environment variables available to your filter commands by configuring the `default_envs` option in the `setup` function. This allows you to inject dynamic or static environment values that will be merged with the built-in variables (e.g., `START_ROW`, `END_ROW`, `FX_LOG`).
+
+```lua
+require("filter_do").setup({
+  ---@type nil | fun(ctx: filter_do.FxCtx): filter_do.EnvKv
+  default_envs = function(ctx)
+    return {
+      PROJECT_ROOT = vim.fn.getcwd(),
+      BUFFER_NUMBER = tostring(ctx.buf_range.bufnr),
+      LOG_LEVEL = "DEBUG",
+    }
+  end,
+})
+
 ## Writing Custom Filter Templates
 
 A filter program reads text from stdin, processes it, and outputs the result to stdout.
@@ -428,8 +444,15 @@ To use a specific interpreter environment, configure it via `require("filter_do"
 require("filter_do").setup({
   ---@type table<string, filter_do.ExecutorInfo>
   executors = {
-    bunjs = {
-      -- Create new executor
+    bunjs = { -- Add new executor
+      ---@param ctx filter_do.ExecutorCtx
+      pre_action = function(ctx)
+        -- customize the environment variables
+        ctx.envs = vim.tbl_extend("force", ctx.envs, {
+          PROJECT_ROOT = vim.fn.getcwd(),
+        })
+        return ctx
+      end,
       filter_cmd = function(ctx)
         local bun = vim.fn.exepath("bun")
         if bun == "" or bun == nil then
