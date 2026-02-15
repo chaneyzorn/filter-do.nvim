@@ -211,7 +211,7 @@ async function handleBlock(text) {
 - **case-4**: Use filter template directly
 
 ```vim
-:Fx conway_game_of_life.py
+:new | Fx conway_game_of_life.py
 ```
 
 - **case-5**: Use specified code snippet with independent edit window
@@ -239,6 +239,13 @@ async function handleBlock(text) {
 ```
 
 - **case-9**: For more fun
+
+```vim
+:enew | while 1 | silent Fx conway_game_of_life.py
+:  redraw | sleep 100m | endwhile
+```
+
+Press Ctrl-C to abort execution. No difference from the built-in `:!filter`—just a demo for fun.
 
 See: `example/fxtpl/conway_game_of_life.py`
 
