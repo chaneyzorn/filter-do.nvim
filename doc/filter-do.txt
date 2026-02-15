@@ -1,4 +1,4 @@
-*filter-do.txt*        For Neovim >= 0.8.0       Last change: 2026 February 14
+*filter-do.txt*        For Neovim >= 0.8.0       Last change: 2026 February 15
 
 ==============================================================================
 Table of Contents                                *filter-do-table-of-contents*
@@ -13,7 +13,7 @@ Table of Contents                                *filter-do-table-of-contents*
   - User Examples                                    |filter-do-user-examples|
   - API                                                        |filter-do-api|
   - User Events                                        |filter-do-user-events|
-  - Writing Custom Filter Templates|filter-do-writing-custom-filter-templates|
+  - Custom Environment Variables      |filter-do-custom-environment-variables|
   - Todo                                                      |filter-do-todo|
   - Notes                                                    |filter-do-notes|
   - Acknowledgments                                |filter-do-acknowledgments|
@@ -30,7 +30,7 @@ TL;DR                                                        *filter-do-tl;dr*
 In vim, you can use the |`:pydo`|, |`:rubydo`|, |`:perldo`|, |`:luado`| series
 of commands to process lines of text in vim buffers:
 
->ex
+>vim
     :pydo return line.upper()
     :luado return line:gsub("(%a+), (%a+)", "%2 %1")
 <
@@ -38,7 +38,7 @@ of commands to process lines of text in vim buffers:
 However, nvim does not currently provide `:jsdo` (or your favorite `:xdo` for
 any language). With this plugin, you can do:
 
->ex
+>vim
     :Fx line.js return line.replace(/apple/gi, "grape")
 <
 
@@ -46,7 +46,7 @@ This plugin provides a universal core pattern based on `:!filter`: specify a
 filter template file and optional user code to generate a filter script, then
 use that script to process text in the vim buffer.
 
->ex
+>vim
     :Fx <filter_template> <(optional)user_code>
 <
 
@@ -142,7 +142,7 @@ specify custom interpreters for scripts (optional).
 
 VIM EX COMMANDS                                    *filter-do-vim-ex-commands*
 
->ex
+>vim
     :[range]Fx <filter_template>[-][+] [user_code]
 <
 
@@ -231,53 +231,61 @@ USER EXAMPLES                                        *filter-do-user-examples*
 
 - **case-1**: Edit buffer text with Ex command
 
->ex
+>vim
     :Fx line.js return line.replace(/apple/gi, "grape")
 <
 
 - **case-2**: Execute filter on charwise-visual column range
 
->ex
+>vim
     :'<,'>Fx text.py import json; json.dumps(text.split())
 <
 
 - **case-3**: Use previous charwise-visual range and code snippet
 
->ex
+>vim
     :*Fx text.py-
 <
 
 - **case-4**: Use filter template directly
 
->ex
-    :Fx conway_game_of_life.py
+>vim
+    :new | Fx conway_game_of_life.py
 <
 
 - **case-5**: Use specified code snippet with independent edit window
 
->ex
+>vim
     :Fx text.py+ return text.upper()
 <
 
 - **case-6**: Use previous user_code with independent edit window
 
->ex
+>vim
     :Fx line.js-+
 <
 
 - **case-7**: Delete lines across multiple files with `:bufdo`
 
->ex
+>vim
     :bufdo Fx line.py return "" if line.find("passwd") else line
 <
 
 - **case-8**: Complex operations on multiple files with `:cdo` (independent window)
 
->ex
+>vim
     :cdo Fx line.js+
 <
 
 - **case-9**: For more fun
+
+>vim
+    :enew | while 1 | silent Fx conway_game_of_life.py
+    :  redraw | sleep 100m | endwhile
+<
+
+Press Ctrl-C to abort execution. No difference from the built-in
+`:!filter`—just a demo for fun.
 
 See: `example/fxtpl/conway_game_of_life.py`
 
@@ -426,28 +434,44 @@ For example, use User events to disable `winbar` in UI windows:
 <
 
 
-WRITING CUSTOM FILTER TEMPLATES    *filter-do-writing-custom-filter-templates*
+CUSTOM ENVIRONMENT VARIABLES          *filter-do-custom-environment-variables*
 
-A filter program reads text from stdin, processes it, and outputs the result to
-stdout.
+You can customize the default environment variables available to your filter
+commands by configuring the `default_envs` option in the `setup` function. This
+allows you to inject dynamic or static environment values that will be merged
+with the built-in variables (e.g., `START_ROW`, `END_ROW`, `FX_LOG`).
 
-
-FILTER TEMPLATE FILES ~
-
-filter-do.nvim uses `vim.api.nvim_get_runtime_file("fxtpl/*", true)` to find
-all template files, such as:
-
-- `filter-do.nvim/fxtpl/*`
-- `~/.config/nvim/fxtpl/*`
-
-filter-do.nvim uses two placeholders in template files for positioning:
-
-- `USER_CODE`: The line containing this marker will be replaced with the user’s code (replacement starts from the **first non-whitespace character** of the line);
-- `user-code-ended`: When editing in an independent window, the cursor is first positioned using `USER_CODE`; if `USER_CODE` has been replaced with actual code, `user-code-ended` is used instead;
-
-For example, `:Fx text.py return text.upper()` generates:
-
->py
+>lua
+    require("filter_do").setup({
+      ---@type nil | fun(ctx: filter_do.FxCtx): filter_do.EnvKv
+      default_envs = function(ctx)
+        return {
+          PROJECT_ROOT = vim.fn.getcwd(),
+          BUFFER_NUMBER = tostring(ctx.buf_range.bufnr),
+          LOG_LEVEL = "DEBUG",
+        }
+      end,
+    })
+    
+    ## Writing Custom Filter Templates
+    
+    A filter program reads text from stdin, processes it, and outputs the result to stdout.
+    
+    ### Filter Template Files
+    
+    filter-do.nvim uses `vim.api.nvim_get_runtime_file("fxtpl/*", true)` to find all template files, such as:
+    
+    - `filter-do.nvim/fxtpl/*`
+    - `~/.config/nvim/fxtpl/*`
+    
+    filter-do.nvim uses two placeholders in template files for positioning:
+    
+    - `USER_CODE`: The line containing this marker will be replaced with the user's code (replacement starts from the **first non-whitespace character** of the line);
+    - `user-code-ended`: When editing in an independent window, the cursor is first positioned using `USER_CODE`; if `USER_CODE` has been replaced with actual code, `user-code-ended` is used instead;
+    
+    For example, `:Fx text.py return text.upper()` generates:
+    
+    ```py
     def handle_block(text: str) -> str:
         """Handle the block of text.
     
@@ -477,9 +501,17 @@ To use a specific interpreter environment, configure it via
 
 >lua
     require("filter_do").setup({
+      ---@type table<string, filter_do.ExecutorInfo>
       executors = {
-        bunjs = {
-          -- Create new executor
+        bunjs = { -- Add new executor
+          ---@param ctx filter_do.ExecutorCtx
+          pre_action = function(ctx)
+            -- customize the environment variables
+            ctx.envs = vim.tbl_extend("force", ctx.envs, {
+              PROJECT_ROOT = vim.fn.getcwd(),
+            })
+            return ctx
+          end,
           filter_cmd = function(ctx)
             local bun = vim.fn.exepath("bun")
             if bun == "" or bun == nil then
@@ -499,6 +531,7 @@ To use a specific interpreter environment, configure it via
             -- Create custom nodejs executor ...
         },
       },
+      ---@type table<string, string|filter_do.ExecutorInfo>
       tpl_exec = {
         ["line.js"] = "my_nodejs",  -- Override built-in defaults
         ["some_custom.js"] = "bunjs",
@@ -507,6 +540,7 @@ To use a specific interpreter environment, configure it via
         },
         -- ["default.sh"] = "shebang",
       },
+      ---@type fun(tpl_name:string):nil|string|filter_do.ExecutorInfo
       get_executor = function(tpl_name)
         if tpl_name == "my.js" then
           if vim.fn.exepath("bun") then

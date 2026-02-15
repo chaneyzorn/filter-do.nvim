@@ -2,6 +2,7 @@ filter-do-acknowledgments	filter-do.txt	/*filter-do-acknowledgments*
 filter-do-api	filter-do.txt	/*filter-do-api*
 filter-do-built-in-templates	filter-do.txt	/*filter-do-built-in-templates*
 filter-do-configuration	filter-do.txt	/*filter-do-configuration*
+filter-do-custom-environment-variables	filter-do.txt	/*filter-do-custom-environment-variables*
 filter-do-features	filter-do.txt	/*filter-do-features*
 filter-do-filter-do.nvim	filter-do.txt	/*filter-do-filter-do.nvim*
 filter-do-installation	filter-do.txt	/*filter-do-installation*
@@ -12,5 +13,4 @@ filter-do-todo	filter-do.txt	/*filter-do-todo*
 filter-do-user-events	filter-do.txt	/*filter-do-user-events*
 filter-do-user-examples	filter-do.txt	/*filter-do-user-examples*
 filter-do-vim-ex-commands	filter-do.txt	/*filter-do-vim-ex-commands*
-filter-do-writing-custom-filter-templates	filter-do.txt	/*filter-do-writing-custom-filter-templates*
 filter-do.txt	filter-do.txt	/*filter-do.txt*
