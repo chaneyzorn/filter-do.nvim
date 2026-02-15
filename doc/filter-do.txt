@@ -14,6 +14,7 @@ Table of Contents                                *filter-do-table-of-contents*
   - API                                                        |filter-do-api|
   - User Events                                        |filter-do-user-events|
   - Custom Environment Variables      |filter-do-custom-environment-variables|
+  - Writing Custom Filter Templates|filter-do-writing-custom-filter-templates|
   - Todo                                                      |filter-do-todo|
   - Notes                                                    |filter-do-notes|
   - Acknowledgments                                |filter-do-acknowledgments|
@@ -452,26 +453,31 @@ with the built-in variables (e.g., `START_ROW`, `END_ROW`, `FX_LOG`).
         }
       end,
     })
-    
-    ## Writing Custom Filter Templates
-    
-    A filter program reads text from stdin, processes it, and outputs the result to stdout.
-    
-    ### Filter Template Files
-    
-    filter-do.nvim uses `vim.api.nvim_get_runtime_file("fxtpl/*", true)` to find all template files, such as:
-    
-    - `filter-do.nvim/fxtpl/*`
-    - `~/.config/nvim/fxtpl/*`
-    
-    filter-do.nvim uses two placeholders in template files for positioning:
-    
-    - `USER_CODE`: The line containing this marker will be replaced with the user's code (replacement starts from the **first non-whitespace character** of the line);
-    - `user-code-ended`: When editing in an independent window, the cursor is first positioned using `USER_CODE`; if `USER_CODE` has been replaced with actual code, `user-code-ended` is used instead;
-    
-    For example, `:Fx text.py return text.upper()` generates:
-    
-    ```py
+<
+
+
+WRITING CUSTOM FILTER TEMPLATES    *filter-do-writing-custom-filter-templates*
+
+A filter program reads text from stdin, processes it, and outputs the result to
+stdout.
+
+
+FILTER TEMPLATE FILES ~
+
+filter-do.nvim uses `vim.api.nvim_get_runtime_file("fxtpl/*", true)` to find
+all template files, such as:
+
+- `filter-do.nvim/fxtpl/*`
+- `~/.config/nvim/fxtpl/*`
+
+filter-do.nvim uses two placeholders in template files for positioning:
+
+- `USER_CODE`: The line containing this marker will be replaced with the user’s code (replacement starts from the **first non-whitespace character** of the line);
+- `user-code-ended`: When editing in an independent window, the cursor is first positioned using `USER_CODE`; if `USER_CODE` has been replaced with actual code, `user-code-ended` is used instead;
+
+For example, `:Fx text.py return text.upper()` generates:
+
+>py
     def handle_block(text: str) -> str:
         """Handle the block of text.
     

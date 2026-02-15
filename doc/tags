@@ -13,4 +13,5 @@ filter-do-todo	filter-do.txt	/*filter-do-todo*
 filter-do-user-events	filter-do.txt	/*filter-do-user-events*
 filter-do-user-examples	filter-do.txt	/*filter-do-user-examples*
 filter-do-vim-ex-commands	filter-do.txt	/*filter-do-vim-ex-commands*
+filter-do-writing-custom-filter-templates	filter-do.txt	/*filter-do-writing-custom-filter-templates*
 filter-do.txt	filter-do.txt	/*filter-do.txt*
