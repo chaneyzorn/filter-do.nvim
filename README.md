@@ -2,7 +2,27 @@
 
 A [`:!filter`](https://neovim.io/doc/user/change.html#filter) script manager that helps you process text in vim buffers using your favorite programming languages.
 
-## TL;DR
+- [filter-do.nvim](#filter-donvim)
+  - [TLDR](#tldr)
+    - [Why?](#why)
+  - [Features](#features)
+  - [Installation](#installation)
+  - [Configuration](#configuration)
+  - [Vim Ex Commands](#vim-ex-commands)
+    - [Subcommands](#subcommands)
+  - [Built-in Templates](#built-in-templates)
+  - [User Examples](#user-examples)
+  - [API](#api)
+  - [User Events](#user-events)
+  - [Custom Environment Variables](#custom-environment-variables)
+  - [Writing Custom Filter Templates](#writing-custom-filter-templates)
+    - [Filter Template Files](#filter-template-files)
+    - [Custom Interpreter Environments](#custom-interpreter-environments)
+  - [Todo](#todo)
+  - [Notes](#notes)
+  - [Acknowledgments](#acknowledgments)
+
+## TLDR
 
 In vim, you can use the [`:pydo`](https://neovim.io/doc/user/if_pyth.html#%3Apydo), [`:rubydo`](https://neovim.io/doc/user/if_ruby.html#%3Arubydo), [`:perldo`](https://neovim.io/doc/user/if_perl.html#%3Aperldo), [`:luado`](https://neovim.io/doc/user/lua.html#%3Aluado) series of commands to process lines of text in vim buffers:
 
@@ -569,4 +589,3 @@ Nevertheless, please exercise caution with valuable data—this project provides
 - [skywind3000/vim-text-process](https://github.com/skywind3000/vim-text-process): Another filter manager that inspired the scope of this plugin;
 - [ColinKennedy/nvim-best-practices-plugin-template](https://github.com/ColinKennedy/nvim-best-practices-plugin-template): Learned much about plugin development; plus many famous plugins in the nvim ecosystem;
 - [mcauley-penney/visual-whitespace.nvim](https://github.com/mcauley-penney/visual-whitespace.nvim): May help you visualize EOL in buffers;
-- Used vscode and zed during development, but it doesn't diminish my love for neovim :)
