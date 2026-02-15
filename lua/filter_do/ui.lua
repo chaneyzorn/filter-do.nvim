@@ -827,6 +827,20 @@ function M:_config_preview_buf()
       self:action_close()
     end,
   })
+  vim.api.nvim_buf_set_keymap(self._preview_buf_id, "n", keymap.previous, "", {
+    desc = "filter-do: Close window",
+    callback = function()
+      self:action_back()
+      self:action_previous()
+    end,
+  })
+  vim.api.nvim_buf_set_keymap(self._preview_buf_id, "n", keymap.next, "", {
+    desc = "filter-do: Close window",
+    callback = function()
+      self:action_back()
+      self:action_next()
+    end,
+  })
 end
 
 return M
