@@ -406,6 +406,7 @@ require("filter_do").setup({
     }
   end,
 })
+```
 
 ## Writing Custom Filter Templates
 
