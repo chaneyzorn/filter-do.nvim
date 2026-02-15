@@ -64,7 +64,7 @@ def init_frame():
     - FRAME_GLIDER_GUN
     - FRAME_RANDOM
     """
-    return FRAME_GLIDER_GUN # USER_CODE
+    return FRAME_GLIDER_GUN  # USER_CODE
 
 
 # user-code-ended {{{
@@ -83,7 +83,7 @@ def get_value_by_pos(frame, pos):
 
 
 def next_frame(cur_frame):
-    if not cur_frame or not cur_frame[0]:
+    if not (cur_frame and cur_frame[0]):
         return []
 
     row_num = len(cur_frame)
@@ -123,7 +123,6 @@ def parse_input(input_str):
     lines = input_str.strip().split("\n")
     match_len = max(len(ALIVE_CELL_CHAR), len(DEAD_CELL_CHAR))
     for line in lines:
-        line = line.strip()
         if not line:
             continue
         row = []
@@ -134,6 +133,8 @@ def parse_input(input_str):
             if current_chunk == ALIVE_CELL_CHAR:
                 row.append(1)
             elif current_chunk == DEAD_CELL_CHAR:
+                row.append(0)
+            else:
                 row.append(0)
             idx += match_len
         frame.append(row)
