@@ -6,20 +6,20 @@ A [`:!filter`](https://neovim.io/doc/user/change.html#filter) script manager tha
 
 In vim, you can use the [`:pydo`](https://neovim.io/doc/user/if_pyth.html#%3Apydo), [`:rubydo`](https://neovim.io/doc/user/if_ruby.html#%3Arubydo), [`:perldo`](https://neovim.io/doc/user/if_perl.html#%3Aperldo), [`:luado`](https://neovim.io/doc/user/lua.html#%3Aluado) series of commands to process lines of text in vim buffers:
 
-```ex
+```vim
 :pydo return line.upper()
 :luado return line:gsub("(%a+), (%a+)", "%2 %1")
 ```
 
 However, nvim does not currently provide `:jsdo` (or your favorite `:xdo` for any language). With this plugin, you can do:
 
-```ex
+```vim
 :Fx line.js return line.replace(/apple/gi, "grape")
 ```
 
 This plugin provides a universal core pattern based on `:!filter`: specify a filter template file and optional user code to generate a filter script, then use that script to process text in the vim buffer.
 
-```ex
+```vim
 :Fx <filter_template> <(optional)user_code>
 ```
 
@@ -108,7 +108,7 @@ See subsequent sections to learn how to write your own filter templates and spec
 
 ## Vim Ex Commands
 
-```ex
+```vim
 :[range]Fx <filter_template>[-][+] [user_code]
 ```
 
@@ -192,49 +192,49 @@ async function handleBlock(text) {
 
 - **case-1**: Edit buffer text with Ex command
 
-```ex
+```vim
 :Fx line.js return line.replace(/apple/gi, "grape")
 ```
 
 - **case-2**: Execute filter on charwise-visual column range
 
-```ex
+```vim
 :'<,'>Fx text.py import json; json.dumps(text.split())
 ```
 
 - **case-3**: Use previous charwise-visual range and code snippet
 
-```ex
+```vim
 :*Fx text.py-
 ```
 
 - **case-4**: Use filter template directly
 
-```ex
+```vim
 :Fx conway_game_of_life.py
 ```
 
 - **case-5**: Use specified code snippet with independent edit window
 
-```ex
+```vim
 :Fx text.py+ return text.upper()
 ```
 
 - **case-6**: Use previous user_code with independent edit window
 
-```ex
+```vim
 :Fx line.js-+
 ```
 
 - **case-7**: Delete lines across multiple files with `:bufdo`
 
-```ex
+```vim
 :bufdo Fx line.py return "" if line.find("passwd") else line
 ```
 
 - **case-8**: Complex operations on multiple files with `:cdo` (independent window)
 
-```ex
+```vim
 :cdo Fx line.js+
 ```
 
@@ -426,6 +426,7 @@ To use a specific interpreter environment, configure it via `require("filter_do"
 
 ```lua
 require("filter_do").setup({
+  ---@type table<string, filter_do.ExecutorInfo>
   executors = {
     bunjs = {
       -- Create new executor
@@ -448,6 +449,7 @@ require("filter_do").setup({
         -- Create custom nodejs executor ...
     },
   },
+  ---@type table<string, string|filter_do.ExecutorInfo>
   tpl_exec = {
     ["line.js"] = "my_nodejs",  -- Override built-in defaults
     ["some_custom.js"] = "bunjs",
@@ -456,6 +458,7 @@ require("filter_do").setup({
     },
     -- ["default.sh"] = "shebang",
   },
+  ---@type fun(tpl_name:string):nil|string|filter_do.ExecutorInfo
   get_executor = function(tpl_name)
     if tpl_name == "my.js" then
       if vim.fn.exepath("bun") then
