@@ -4,7 +4,7 @@
 Table of Contents                                *filter-do-table-of-contents*
 
 1. filter-do.nvim                                   |filter-do-filter-do.nvim|
-  - TL;DR                                                    |filter-do-tl;dr|
+  - TLDR                                                      |filter-do-tldr|
   - Features                                              |filter-do-features|
   - Installation                                      |filter-do-installation|
   - Configuration                                    |filter-do-configuration|
@@ -16,7 +16,6 @@ Table of Contents                                *filter-do-table-of-contents*
   - Custom Environment Variables      |filter-do-custom-environment-variables|
   - Writing Custom Filter Templates|filter-do-writing-custom-filter-templates|
   - Todo                                                      |filter-do-todo|
-  - Notes                                                    |filter-do-notes|
   - Acknowledgments                                |filter-do-acknowledgments|
 
 ==============================================================================
@@ -26,7 +25,34 @@ A |`:!filter`| script manager that helps you process text in vim buffers using
 your favorite programming languages.
 
 
-TL;DR                                                        *filter-do-tl;dr*
+<https://github.com/user-attachments/assets/484adc65-a89c-4811-9954-b24aa9dff6a7>
+
+
+  **Note** This project is in alpha stage — bugs and breaking changes may
+  occur. filter-do.nvim only modifies target buffer content (no auto-save to
+  files); use Vim’s built-in undo to revert changes. Exercise caution with
+  valuable data, as no warranty is provided against data loss.
+- |filter-do-filter-do.nvim|
+    - |filter-do-tldr|
+        - |filter-do-why?|
+    - |filter-do-features|
+    - |filter-do-installation|
+    - |filter-do-configuration|
+    - |filter-do-vim-ex-commands|
+        - |filter-do-subcommands|
+    - |filter-do-built-in-templates|
+    - |filter-do-user-examples|
+    - |filter-do-api|
+    - |filter-do-user-events|
+    - |filter-do-custom-environment-variables|
+    - |filter-do-writing-custom-filter-templates|
+        - |filter-do-filter-template-files|
+        - |filter-do-custom-interpreter-environments|
+    - |filter-do-todo|
+    - |filter-do-acknowledgments|
+
+
+TLDR                                                          *filter-do-tldr*
 
 In vim, you can use the |`:pydo`|, |`:rubydo`|, |`:perldo`|, |`:luado`| series
 of commands to process lines of text in vim buffers:
@@ -148,10 +174,10 @@ VIM EX COMMANDS                                    *filter-do-vim-ex-commands*
 <
 
 - `[range]`: Optional, handled automatically by vim ||cmdline-ranges||; additionally recognizes column ranges from ||charwise-visual||;
-- `<filter_template>`: Required, sourced from `<vim_runtime>/fxtpl/*` (e.g., `~/.config/nvim/fxtpl/your_own_template.suffix`);
+- `<filter_template>`: Required, sourced from `<vim_runtime>/fxtpl/*` (e.g., `your_own_template.suffix` from `~/.config/nvim/fxtpl/*`);
 - `[user_code]`: Optional, custom code that combines with `<filter_template>` to generate a script for `:!filter`; if not specified, the original template content is used directly;
 - `[-]`: Optional modifier, uses the previous `[user_code]` (no need to re-enter code);
-- `[+]`: Optional modifier, opens an independent window to edit the script (supports multi-line `[user_code]`);
+- `[+]`: Optional modifier, opens an independent window to edit the script (supports writing multi-line codes);
 
 
 SUBCOMMANDS ~
@@ -282,8 +308,11 @@ USER EXAMPLES                                        *filter-do-user-examples*
 
 >vim
     :enew | while 1 | silent Fx conway_game_of_life.py
-    :  redraw | sleep 100m | endwhile
+    :  redraw | sleep 50m | endwhile
 <
+
+
+<https://github.com/user-attachments/assets/816aef72-967e-4c1c-89d9-d79606d9a69f>
 
 Press Ctrl-C to abort execution. No difference from the built-in
 `:!filter`—just a demo for fun.
@@ -616,22 +645,12 @@ TODO                                                          *filter-do-todo*
 - Support the Windows platform
 
 
-NOTES                                                        *filter-do-notes*
-
-filter-do.nvim only modifies target buffer content and does not automatically
-write changes to files. You can use vim’s built-in undo to revert changes.
-
-Nevertheless, please exercise caution with valuable data—this project
-provides no warranty against data loss.
-
-
 ACKNOWLEDGMENTS                                    *filter-do-acknowledgments*
 
 - |pydo|: A convenient built-in command (despite limitations) that inspired this project;
 - skywind3000/vim-text-process <https://github.com/skywind3000/vim-text-process>: Another filter manager that inspired the scope of this plugin;
 - ColinKennedy/nvim-best-practices-plugin-template <https://github.com/ColinKennedy/nvim-best-practices-plugin-template>: Learned much about plugin development; plus many famous plugins in the nvim ecosystem;
 - mcauley-penney/visual-whitespace.nvim <https://github.com/mcauley-penney/visual-whitespace.nvim>: May help you visualize EOL in buffers;
-- Used vscode and zed during development, but it doesn’t diminish my love for neovim :)
 
 Generated by panvimdoc <https://github.com/kdheepak/panvimdoc>
 

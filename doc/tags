@@ -6,9 +6,8 @@ filter-do-custom-environment-variables	filter-do.txt	/*filter-do-custom-environm
 filter-do-features	filter-do.txt	/*filter-do-features*
 filter-do-filter-do.nvim	filter-do.txt	/*filter-do-filter-do.nvim*
 filter-do-installation	filter-do.txt	/*filter-do-installation*
-filter-do-notes	filter-do.txt	/*filter-do-notes*
 filter-do-table-of-contents	filter-do.txt	/*filter-do-table-of-contents*
-filter-do-tl;dr	filter-do.txt	/*filter-do-tl;dr*
+filter-do-tldr	filter-do.txt	/*filter-do-tldr*
 filter-do-todo	filter-do.txt	/*filter-do-todo*
 filter-do-user-events	filter-do.txt	/*filter-do-user-events*
 filter-do-user-examples	filter-do.txt	/*filter-do-user-examples*
