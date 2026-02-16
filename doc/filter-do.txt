@@ -1,4 +1,4 @@
-*filter-do.txt*        For Neovim >= 0.8.0       Last change: 2026 February 15
+*filter-do.txt*        For Neovim >= 0.8.0       Last change: 2026 February 16
 
 ==============================================================================
 Table of Contents                                *filter-do-table-of-contents*
@@ -69,7 +69,7 @@ any language). With this plugin, you can do:
     :Fx line.js return line.replace(/apple/gi, "grape")
 <
 
-This plugin provides a universal core pattern based on `:!filter`: specify a
+This plugin provides a universal core pattern based on `:!filter` — specify a
 filter template file and optional user code to generate a filter script, then
 use that script to process text in the vim buffer.
 
