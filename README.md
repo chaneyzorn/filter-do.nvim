@@ -41,7 +41,7 @@ However, nvim does not currently provide `:jsdo` (or your favorite `:xdo` for an
 :Fx line.js return line.replace(/apple/gi, "grape")
 ```
 
-This plugin provides a universal core pattern based on `:!filter`: specify a filter template file and optional user code to generate a filter script, then use that script to process text in the vim buffer.
+This plugin provides a universal core pattern based on `:!filter` — specify a filter template file and optional user code to generate a filter script, then use that script to process text in the vim buffer.
 
 ```vim
 :Fx <filter_template> <(optional)user_code>
