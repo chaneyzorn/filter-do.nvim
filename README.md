@@ -4,7 +4,7 @@ A [`:!filter`](https://neovim.io/doc/user/change.html#filter) script manager tha
 
 <https://github.com/user-attachments/assets/8975630b-f8d2-4b16-b0ce-23f385ad3302>
 
-> **Note**
+> [!NOTE]
 > This project is in alpha stage — bugs and breaking changes may occur. filter-do.nvim only modifies target buffer content (no auto-save to files); use Vim's built-in undo to revert changes. Exercise caution with valuable data, as no warranty is provided against data loss.
 
 - [filter-do.nvim](#filter-donvim)
@@ -210,6 +210,20 @@ def handle_block(text: str) -> str:
 async function handleBlock(text) {
   return text; // USER_CODE
 }
+```
+
+- systool.sh
+
+```sh
+#!/usr/bin/env sh
+# Invoke external program as :!filter
+
+cat # USER_CODE
+
+# user-code-ended
+# This is a simple wrapper designed to
+# align with filter-do.nvim’s capabilities.
+# such as recognition of `charwise-visual` ranges.
 ```
 
 ## User Examples
@@ -576,8 +590,7 @@ require("filter_do").setup({
 ## Todo
 
 - Update types documentation
-- Support more executors
-- Add executor for system binaries
+- Support more executors and templates
 - Support showing `:h 'listchars'`
 - Add async spinner in UI during execution
 - Create highlight group
