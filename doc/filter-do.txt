@@ -1,4 +1,4 @@
-*filter-do.txt*        For Neovim >= 0.8.0       Last change: 2026 February 16
+*filter-do.txt*        For Neovim >= 0.8.0       Last change: 2026 February 17
 
 ==============================================================================
 Table of Contents                                *filter-do-table-of-contents*
@@ -28,10 +28,10 @@ your favorite programming languages.
 <https://github.com/user-attachments/assets/8975630b-f8d2-4b16-b0ce-23f385ad3302>
 
 
-  **Note** This project is in alpha stage — bugs and breaking changes may
-  occur. filter-do.nvim only modifies target buffer content (no auto-save to
-  files); use Vim’s built-in undo to revert changes. Exercise caution with
-  valuable data, as no warranty is provided against data loss.
+  [!NOTE] This project is in alpha stage — bugs and breaking changes may occur.
+  filter-do.nvim only modifies target buffer content (no auto-save to files); use
+  Vim’s built-in undo to revert changes. Exercise caution with valuable data,
+  as no warranty is provided against data loss.
 - |filter-do-filter-do.nvim|
     - |filter-do-tldr|
         - |filter-do-why?|
@@ -251,6 +251,20 @@ Built-in templates are located in the `filter-do.nvim/fxtpl/` directory.
     async function handleBlock(text) {
       return text; // USER_CODE
     }
+<
+
+- systool.sh
+
+>sh
+    #!/usr/bin/env sh
+    # Invoke external program as :!filter
+    
+    cat # USER_CODE
+    
+    # user-code-ended
+    # This is a simple wrapper designed to
+    # align with filter-do.nvim’s capabilities.
+    # such as recognition of `charwise-visual` ranges.
 <
 
 
@@ -637,8 +651,7 @@ Compiled languages (e.g., Go) are also supported:
 TODO                                                          *filter-do-todo*
 
 - Update types documentation
-- Support more executors
-- Add executor for system binaries
+- Support more executors and templates
 - Support showing |'listchars'|
 - Add async spinner in UI during execution
 - Create highlight group
