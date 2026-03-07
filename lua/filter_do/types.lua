@@ -55,6 +55,7 @@
 ---@field action_keymaps table<string,string>
 ---@field ui_select 'auto' | 'default' | 'telescope' | 'snacks.picker' | 'mini.pick' | filter_do.UISelectFn
 ---@field show_tpl_as_record boolean
+---@field listchars string | nil `:h 'listchars'` for target window, nil for global defaults
 
 ---@class (partial) filter_do.UserConfig: filter_do.Config
 

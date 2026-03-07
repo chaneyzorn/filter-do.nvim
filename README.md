@@ -113,6 +113,9 @@ require("filter_do").setup({
     -- Whether to show the template itself as a selectable historical record
     show_tpl_as_record = true,
     winborder = "rounded",
+    -- Custom :h 'listchars' for UI's target window, nil for global defaults
+    -- eg: "nbsp:␣,tab:»·,trail:∙,eol:¬,space:∙"
+    listchars = nil,
     -- UI-local key mappings
     action_keymaps = {
       apply = "<LocalLeader>a",
@@ -222,7 +225,7 @@ cat # USER_CODE
 
 # user-code-ended
 # This is a simple wrapper designed to
-# align with filter-do.nvim’s capabilities.
+# align with filter-do.nvim's capabilities.
 # such as recognition of `charwise-visual` ranges.
 ```
 
@@ -382,11 +385,11 @@ During filter-do execution:
 - **FxExecPre**: Before executing filter script
   - `event.data={ctx:filter_do.FxCtx}`
 - **FxExecPost**: After executing filter script
-  - `event.data={executor_ctx:filter_do.ExecutorCtx, filter_cmd=string[], shell_code:vim.v.shell_error}`
+  - `event.data={executor_ctx:filter_do.ExecutorCtx, filter_cmd:string[], shell_code:vim.v.shell_error}`
 - **FxSaveHistoryPre**: Before saving code snippet record
   - `event.data={stub_path:string}`
 - **FxSaveHistoryPost**: After saving code snippet record
-  - `event.data={stub_path:string, exist_record=string|nil, new_record:string, checksum=string}`
+  - `event.data={stub_path:string, exist_record:string|nil, new_record:string, checksum:string}`
 
 During UI interaction:
 
@@ -591,7 +594,6 @@ require("filter_do").setup({
 
 - Update types documentation
 - Support more executors and templates
-- Support showing `:h 'listchars'`
 - Add async spinner in UI during execution
 - Create highlight group
 - Support the Windows platform

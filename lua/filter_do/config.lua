@@ -13,6 +13,7 @@ local defaults = {
     ui_select = "auto",
     show_tpl_as_record = true,
     winborder = "rounded",
+    listchars = nil,
     action_keymaps = {
       apply = "<LocalLeader>a",
       undo = "<LocalLeader>u",

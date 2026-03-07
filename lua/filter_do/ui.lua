@@ -484,8 +484,14 @@ function M:highlight_buf_range()
   local buf_range = self._state.ctx.buf_range
   vim.api.nvim_win_set_cursor(self._target_win_id, { buf_range.start_row, buf_range.start_col })
   vim.api.nvim_win_call(self._target_win_id, function()
-    vim.cmd("normal! zt")
+    vim.cmd("normal! zt") -- keep cursor location at window top
   end)
+
+  -- set listchars for the target window
+  if Cfg.ui.listchars ~= nil then
+    vim.api.nvim_set_option_value("listchars", Cfg.ui.listchars, { win = self._target_win_id })
+    vim.api.nvim_set_option_value("list", true, { win = self._target_win_id })
+  end
 
   local ns_name = "filter_do.buf_range_hl"
   local ns_id = vim.api.nvim_create_namespace(ns_name)
@@ -499,7 +505,7 @@ function M:highlight_buf_range()
     {
       regtype = buf_range.charwise_visual and "v" or "V",
       inclusive = true,
-      priority = 1000,
+      priority = vim.hl.priorities.user + 1,
     }
   )
 end
@@ -510,6 +516,20 @@ function M:clear_buf_range_highlight(buf_range)
   local ns_name = "filter_do.buf_range_hl"
   local ns_id = vim.api.nvim_create_namespace(ns_name)
   vim.api.nvim_buf_clear_namespace(buf_range.bufnr, ns_id, 0, -1)
+
+  -- restore listchars to global defaults
+  if Cfg.ui.listchars ~= nil and vim.api.nvim_win_is_valid(self._target_win_id) then
+    vim.api.nvim_set_option_value(
+      "listchars",
+      vim.api.nvim_get_option_value("listchars", { scope = "global" }),
+      { win = self._target_win_id }
+    )
+    vim.api.nvim_set_option_value(
+      "list",
+      vim.api.nvim_get_option_value("list", { scope = "global" }),
+      { win = self._target_win_id }
+    )
+  end
 end
 
 function M:action_apply()
