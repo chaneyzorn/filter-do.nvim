@@ -4,6 +4,7 @@
 local executors = {
   python = require("filter_do.executors.python"),
   nodejs = require("filter_do.executors.nodejs"),
+  bunjs = require("filter_do.executors.bunjs"),
   shebang = require("filter_do.executors.shebang"),
 }
 
