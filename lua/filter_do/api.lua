@@ -1,4 +1,6 @@
 ---@module "filter_do.api"
+--- Public API for filter-do.nvim.
+--- This module provides the main interface for programmatic interaction with the plugin.
 
 local F = require("filter_do.filter")
 local U = require("filter_do.utils")
@@ -7,8 +9,8 @@ local Cfg = require("filter_do.config").get()
 
 local M = {}
 
----list all available filters
----@return {tpl_name:string, path:string}[]
+---List all available filter templates.
+---@return {tpl_name:string, path:string}[] Array of filter templates, sorted alphabetically by name
 function M.list_filters()
   local res = {}
   for _, filter in pairs(F.list_filters()) do
@@ -23,12 +25,15 @@ function M.list_filters()
   return res
 end
 
+-- Re-export functions from other modules for convenience
 M.get_filter_by_name = F.get_filter_by_name
 M.list_history_by_tpl = F.list_history_by_tpl
 M.get_current_buffer_range = U.get_current_buffer_range
 
---- the core api to do filter execution
----@param ctx filter_do.FxCtx
+---Execute a filter on the specified buffer range.
+---This is the core API for filter execution. If `ctx.edit_scratch` is true,
+---the UI will be opened for interactive editing instead of immediate execution.
+---@param ctx filter_do.FxCtx Execution context containing all necessary information
 function M.filter_do(ctx)
   if ctx.edit_scratch then
     vim.schedule(function()
@@ -46,7 +51,10 @@ function M.filter_do(ctx)
   return filter:exec_filter(ctx)
 end
 
----@param ctxs filter_do.FxCtx[]
+---Execute multiple filters in batch.
+---Sync contexts (without UI) are processed first, then async contexts (with UI)
+---are scheduled to open the interactive editor.
+---@param ctxs filter_do.FxCtx[] Array of execution contexts to process
 function M.batch_filter_do(ctxs)
   local sync_ctx = {}
   local async_ctx = {}
@@ -67,9 +75,12 @@ function M.batch_filter_do(ctxs)
   end
 end
 
+---Build an FxCtx by interactively prompting the user.
+---This is an internal async helper that uses the provided getter functions
+---to gather all necessary context information step by step.
 ---@async
----@param ctx_getter filter_do.api.FxCtxGetter
----@return filter_do.FxCtx | nil
+---@param ctx_getter filter_do.api.FxCtxGetter Interface for gathering context interactively
+---@return filter_do.FxCtx | nil Context if successfully gathered, nil if user cancelled
 local function get_ctx_from_getter(ctx_getter)
   local buf_range = ctx_getter.get_buf_range()
   if not buf_range then
@@ -98,7 +109,9 @@ local function get_ctx_from_getter(ctx_getter)
   return ctx
 end
 
----@param ctx_getter filter_do.api.FxCtxGetter
+---Wrapper that runs get_ctx_from_getter in a coroutine.
+---Handles the async gathering of context and then executes the filter.
+---@param ctx_getter filter_do.api.FxCtxGetter Interface for gathering context interactively
 function M.filter_do_wrapper(ctx_getter)
   coroutine.wrap(function()
     local ctx = get_ctx_from_getter(ctx_getter)
@@ -108,8 +121,9 @@ function M.filter_do_wrapper(ctx_getter)
   end)()
 end
 
----an easy-to-use api to do filter execution with ui selection
----@param opts filter_do.FxCtxOpts|nil
+---Interactive filter execution with UI selection.
+---Prompts the user to select a template and code snippet (if not provided in opts).
+---@param opts filter_do.FxCtxOpts|nil Optional partial context to pre-populate. Missing fields will be prompted interactively.
 function M.select_filter_do(opts)
   if vim.fn.mode():match("^[nvV]") == nil then
     U.msg_err("filter_do.nvim: can only be called in visual mode and normal mode")
@@ -167,12 +181,15 @@ function M.select_filter_do(opts)
   return M.filter_do_wrapper(ctx_getter)
 end
 
+---Open the log file in a vertical split.
+---The log file contains output from the filter scripts
 function M.view_log()
   local log_path = U.get_log_path()
   if not vim.uv.fs_stat(log_path) then
     U.msg_info("filter_do.nvim: log is empty")
     return
   end
+  ---Uses 'sview' command for read-only viewing.
   return vim.cmd("vertical sview " .. log_path)
 end
 

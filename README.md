@@ -4,9 +4,6 @@ A [`:!filter`](https://neovim.io/doc/user/change.html#filter) script manager tha
 
 <https://github.com/user-attachments/assets/8975630b-f8d2-4b16-b0ce-23f385ad3302>
 
-> [!NOTE]
-> This project is in alpha stage — bugs and breaking changes may occur. filter-do.nvim only modifies target buffer content (no auto-save to files); use Vim's built-in undo to revert changes. Exercise caution with valuable data, as no warranty is provided against data loss.
-
 - [filter-do.nvim](#filter-donvim)
   - [TLDR](#tldr)
     - [Why?](#why)
@@ -592,7 +589,6 @@ require("filter_do").setup({
 
 ## Todo
 
-- Update types documentation
 - Support more executors and templates
 - Add async spinner in UI during execution
 - Create highlight group
