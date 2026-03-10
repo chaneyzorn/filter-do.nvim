@@ -590,7 +590,6 @@ require("filter_do").setup({
 
 ## Todo
 
-- Support more executors and templates
 - Add async spinner in UI during execution
 - Create highlight group
 - Support the Windows platform
