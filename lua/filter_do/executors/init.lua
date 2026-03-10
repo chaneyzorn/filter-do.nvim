@@ -5,6 +5,7 @@ local executors = {
   python = require("filter_do.executors.python"),
   nodejs = require("filter_do.executors.nodejs"),
   bunjs = require("filter_do.executors.bunjs"),
+  lua = require("filter_do.executors.lua"),
   shebang = require("filter_do.executors.shebang"),
 }
 
@@ -14,6 +15,8 @@ local tpl_exec = {
   ["text.py"] = executors.python,
   ["line.js"] = executors.nodejs,
   ["text.js"] = executors.nodejs,
+  ["line.lua"] = executors.lua,
+  ["text.lua"] = executors.lua,
 }
 
 local E = {}
