@@ -524,6 +524,7 @@ require("filter_do").setup({
   tpl_exec = {
     ["line.js"] = "my_nodejs",  -- Override built-in defaults
     ["some_custom.js"] = "bunjs",
+    ["line.lua"] = "nvim_lua",
     ["another.py"] = {
         -- Specific python version (e.g., pypy) ...
     },

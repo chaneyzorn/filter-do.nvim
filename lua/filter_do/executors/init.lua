@@ -6,6 +6,7 @@ local executors = {
   nodejs = require("filter_do.executors.nodejs"),
   bunjs = require("filter_do.executors.bunjs"),
   lua = require("filter_do.executors.lua"),
+  nvim_lua = require("filter_do.executors.nvim_lua"),
   shebang = require("filter_do.executors.shebang"),
 }
 
