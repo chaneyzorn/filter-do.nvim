@@ -1,4 +1,4 @@
-*filter-do.txt*         For Neovim >= 0.8.0         Last change: 2026 March 10
+*filter-do.txt*         For Neovim >= 0.8.0         Last change: 2026 March 11
 
 ==============================================================================
 Table of Contents                                *filter-do-table-of-contents*
@@ -15,7 +15,6 @@ Table of Contents                                *filter-do-table-of-contents*
   - User Events                                        |filter-do-user-events|
   - Custom Environment Variables      |filter-do-custom-environment-variables|
   - Writing Custom Filter Templates|filter-do-writing-custom-filter-templates|
-  - Todo                                                      |filter-do-todo|
   - Acknowledgments                                |filter-do-acknowledgments|
 
 ==============================================================================
@@ -43,7 +42,6 @@ your favorite programming languages.
     - |filter-do-writing-custom-filter-templates|
         - |filter-do-filter-template-files|
         - |filter-do-custom-interpreter-environments|
-    - |filter-do-todo|
     - |filter-do-acknowledgments|
 
 
@@ -645,13 +643,6 @@ Compiled languages (e.g., Go) are also supported:
       },
     })
 <
-
-
-TODO                                                          *filter-do-todo*
-
-- Add async spinner in UI during execution
-- Create highlight group
-- Support the Windows platform
 
 
 ACKNOWLEDGMENTS                                    *filter-do-acknowledgments*

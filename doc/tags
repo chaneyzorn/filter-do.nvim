@@ -8,7 +8,6 @@ filter-do-filter-do.nvim	filter-do.txt	/*filter-do-filter-do.nvim*
 filter-do-installation	filter-do.txt	/*filter-do-installation*
 filter-do-table-of-contents	filter-do.txt	/*filter-do-table-of-contents*
 filter-do-tldr	filter-do.txt	/*filter-do-tldr*
-filter-do-todo	filter-do.txt	/*filter-do-todo*
 filter-do-user-events	filter-do.txt	/*filter-do-user-events*
 filter-do-user-examples	filter-do.txt	/*filter-do-user-examples*
 filter-do-vim-ex-commands	filter-do.txt	/*filter-do-vim-ex-commands*
