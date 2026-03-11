@@ -6,6 +6,7 @@ import { createWriteStream } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, basename, join } from "node:path";
 import { stdin, stdout } from "node:process";
+import * as readline from "node:readline";
 
 function dateTimeStr() {
   const date = new Date();
@@ -55,38 +56,13 @@ async function handleOneLine(line, linenr) {
 
 // user-code-ended {{{
 
-function* lineIter(chunk) {
-  let index = 0;
-  while (index < chunk.length) {
-    let ending = true;
-    let lineEndIndex = chunk.indexOf("\n", index);
-    if (lineEndIndex === -1) {
-      lineEndIndex = chunk.length;
-      ending = false;
-    } else {
-      lineEndIndex++;
-    }
-    const line = chunk.slice(index, lineEndIndex);
-    index = lineEndIndex;
-    yield { line, ending };
-  }
-}
-
 async function* readLinesFromStdin() {
-  stdin.setEncoding("utf8");
-  let buffer = "";
-  for await (const chunk of stdin) {
-    for (const item of lineIter(buffer + chunk)) {
-      if (item.ending) {
-        yield item.line;
-        buffer = "";
-      } else {
-        buffer = item.line;
-      }
-    }
-  }
-  if (buffer) {
-    yield buffer;
+  const rl = readline.createInterface({
+    input: stdin,
+    crlfDelay: Infinity,
+  });
+  for await (const line of rl) {
+    yield line + "\n";
   }
 }
 

@@ -20,7 +20,6 @@ A [`:!filter`](https://neovim.io/doc/user/change.html#filter) script manager tha
   - [Writing Custom Filter Templates](#writing-custom-filter-templates)
     - [Filter Template Files](#filter-template-files)
     - [Custom Interpreter Environments](#custom-interpreter-environments)
-  - [Todo](#todo)
   - [Acknowledgments](#acknowledgments)
 
 ## TLDR
@@ -587,12 +586,6 @@ require("filter_do").setup({
   },
 })
 ```
-
-## Todo
-
-- Add async spinner in UI during execution
-- Create highlight group
-- Support the Windows platform
 
 ## Acknowledgments
 
